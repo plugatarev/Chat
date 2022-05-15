@@ -3,5 +3,6 @@ public enum MessageType {
     SEND_EVERYBODY,
     SEND_USER,
     EXIT,
-    REGISTRATION
+    REGISTRATION,
+    NOT_REGISTRATION
 }

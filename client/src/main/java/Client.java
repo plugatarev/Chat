@@ -10,7 +10,7 @@ import java.util.GregorianCalendar;
 public class Client implements Runnable{
     private Socket socket;
     private Message lastMessage;
-    private Writer writer;
+    private ObjectOutputStream writer;
     private final View viewer = new View(this);
 
     @Override
@@ -18,16 +18,16 @@ public class Client implements Runnable{
         try{
             socket = new Socket();
             socket.connect(new InetSocketAddress("localhost", 8080));
-            writer = new OutputStreamWriter(socket.getOutputStream());
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            writer = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
             Thread controller = new Thread(new Controller(this));
             controller.start();
             while (isConnected()){
-                String line = reader.readLine();
-                lastMessage = new Message(line, Message.getMessageType(line));
+                lastMessage = (Message) reader.readObject();
                 viewer.update();
+                MessageType type = lastMessage.getType();
+                if (type.equals(MessageType.EXIT) || type.equals(MessageType.NOT_REGISTRATION)) break;
             }
-            controller.join();
         } catch (Exception e) {
             System.out.println("Server is not available");
         }
@@ -36,9 +36,9 @@ public class Client implements Runnable{
         }
     }
 
-    public void sendMessage(String message){
+    public void sendMessage(Message message){
         try {
-            writer.write(message + "\n");
+            writer.writeObject(message);
             writer.flush();
         }
         catch (IOException e){

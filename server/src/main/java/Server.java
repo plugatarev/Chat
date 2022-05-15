@@ -1,6 +1,4 @@
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -9,10 +7,14 @@ import java.util.List;
 
 public class Server implements Runnable{
     private ServerSocket socket;
-    private final HashMap<User, Writer> clients = new HashMap<>();
+    private final HashMap<User, ObjectOutputStream> clients = new HashMap<>();
 
-    public HashMap<User, Writer> getUsers(){
-        return clients;
+    public List<String> getOnlineUsersName(){
+        return clients.keySet().stream().map(User::getName).toList();
+    }
+
+    public void removeOnlineUser(User user){
+        clients.remove(user);
     }
 
     @Override
@@ -34,26 +36,36 @@ public class Server implements Runnable{
         }
     }
 
-    /**
-     * type - optional parameter, if passed null it will be determined automatically
-     **/
-    public void sendMessage(String message, Writer writer, MessageType type){
-        if (type == null) type = Message.getMessageType(message);
-        switch (type){
-            case REGISTRATION:
+    public void sendMessage(Message message, ObjectOutputStream writer){
+        switch (message.getType()) {
+            case REGISTRATION, SEND_EVERYBODY -> sendToEverybody(message);
+            case SHOW_USERS ->{
+                message.setMessage(getOnlineUsersName().toString());
                 sendToUser(message, writer);
-            case SEND_EVERYBODY:
-                sendToEverybody(message);
-                break;
-            case SEND_USER:
-                sendToUser(message, writer);
-                break;
+            }
+            case NOT_REGISTRATION -> sendToUser(message, writer);
+            case SEND_USER -> {
+                User dst = new User(Message.getReceiverName(message.getMessage()));
+                if (clients.containsKey(dst)){
+                    sendToUser(message, writer);
+                    sendToUser(new Message(Message.getMessageFromAddressedMessage(message.getMessage()), MessageType.SEND_USER),
+                            clients.get(dst));
+                }
+                else{
+                    message.setMessage("Such user doesn't exists");
+                    sendToUser(message, writer);
+                }
+            }
+            case EXIT -> {
+                sendToUser(new Message("You left chat", MessageType.EXIT), writer);
+                sendToEverybodyExceptUser(new Message("left chat", MessageType.SEND_USER, message.getSenderName()), writer);
+            }
         }
     }
 
-    private void sendToUser(String message, Writer writer){
+    private void sendToUser(Message message, ObjectOutputStream writer){
         try{
-            writer.write(message + "\n");
+            writer.writeObject(message);
             writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -70,23 +82,19 @@ public class Server implements Runnable{
         }
     }
     
-    private void sendToEverybody(String message) {
-        for (User user: clients.keySet()){
-            sendToUser(message, clients.get(user));
-        }
+    private void sendToEverybody(Message message) {
+        clients.forEach((key, value) -> sendToUser(message, value));
     }
 
-    public void addUser(User user, Writer writer) throws InvalidUserName {
+    void sendToEverybodyExceptUser(Message message, ObjectOutputStream user){
+        clients.entrySet().stream().filter(c -> !c.getValue().equals(user)).forEach(c -> sendToUser(message, c.getValue()));
+    }
+
+    public void addUser(User user, ObjectOutputStream writer) throws InvalidUserName {
         if (clients.containsKey(user)){
             throw new InvalidUserName("This name is busy: " + user.getName());
         }
         clients.put(user, writer);
     }
 
-    public void exitUserCommand(Message message) {
-
-    }
-
-    public void userListCommand(Message message) {
-    }
 }

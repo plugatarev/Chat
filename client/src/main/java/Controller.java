@@ -16,9 +16,9 @@ public class Controller implements Runnable {
         try {
             while (client.isConnected()) {
                 String line = consoleReader.readLine();
-                client.sendMessage(line);
+                if (line == null) break;
+                client.sendMessage(new Message(line, Message.getMessageType(line)));
             }
-            System.out.println("Client not connect");
         } catch (IOException e) {
             System.out.println("Socket closed");
         }
