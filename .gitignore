@@ -1,0 +1,6 @@
+client/.idea
+client/target/classes
+client.iml
+server/target
+server/.idea
+server.iml
