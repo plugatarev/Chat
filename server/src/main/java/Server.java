@@ -4,10 +4,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
+import org.slf4j.*;
 
 public class Server implements Runnable{
+    private static final int PORT = 8080;
     private ServerSocket socket;
     private final HashMap<User, ObjectOutputStream> clients = new HashMap<>();
+    private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     public List<String> getOnlineUsersName(){
         return clients.keySet().stream().map(User::getName).toList();
@@ -21,9 +24,11 @@ public class Server implements Runnable{
     public void run() {
         try {
             socket = new ServerSocket();
-            socket.bind(new InetSocketAddress("localhost", 8080));
+            socket.bind(new InetSocketAddress("localhost", PORT));
+            LOG.debug("Server starting on port " + PORT);
             while (true) {
                 Socket clientSocket = socket.accept();
+                LOG.debug("Client started...");
                 Thread t = new Thread(new Controller(clientSocket, this));
                 t.start();
             }
@@ -48,8 +53,8 @@ public class Server implements Runnable{
                 User dst = new User(Message.getReceiverName(message.getMessage()));
                 if (clients.containsKey(dst)){
                     sendToUser(message, writer);
-                    sendToUser(new Message(Message.getMessageFromAddressedMessage(message.getMessage()), MessageType.SEND_USER),
-                            clients.get(dst));
+                    sendToUser(new Message(Message.getMessageFromAddressedMessage(message.getMessage()),
+                                    MessageType.SEND_USER, message.getSenderName()), clients.get(dst));
                 }
                 else{
                     message.setMessage("Such user doesn't exists");
@@ -57,6 +62,7 @@ public class Server implements Runnable{
                 }
             }
             case EXIT -> {
+                LOG.debug(message.getSenderName() + " left chat");
                 sendToUser(new Message("You left chat", MessageType.EXIT), writer);
                 sendToEverybodyExceptUser(new Message("left chat", MessageType.SEND_USER, message.getSenderName()), writer);
             }
@@ -90,11 +96,12 @@ public class Server implements Runnable{
         clients.entrySet().stream().filter(c -> !c.getValue().equals(user)).forEach(c -> sendToUser(message, c.getValue()));
     }
 
-    public void addUser(User user, ObjectOutputStream writer) throws InvalidUserName {
+    public boolean addUser(User user, ObjectOutputStream writer){
         if (clients.containsKey(user)){
-            throw new InvalidUserName("This name is busy: " + user.getName());
+            return false;
         }
         clients.put(user, writer);
+        return true;
     }
 
 }

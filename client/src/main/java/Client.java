@@ -1,11 +1,6 @@
-import jdk.swing.interop.SwingInterOpUtils;
-import org.w3c.dom.ls.LSOutput;
-
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.GregorianCalendar;
 
 public class Client implements Runnable{
     private Socket socket;
@@ -26,7 +21,7 @@ public class Client implements Runnable{
                 lastMessage = (Message) reader.readObject();
                 viewer.update();
                 MessageType type = lastMessage.getType();
-                if (type.equals(MessageType.EXIT) || type.equals(MessageType.NOT_REGISTRATION)) break;
+                if (type.equals(MessageType.EXIT)) break;
             }
         } catch (Exception e) {
             System.out.println("Server is not available");
