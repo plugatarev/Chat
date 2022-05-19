@@ -1,5 +1,5 @@
 client/.idea
-client/target/classes
+client/target
 client.iml
 server/target
 server/.idea
