@@ -1,7 +1,5 @@
-public record View(Client client) {
-
-    public void update() {
-        Message m = client.getLastMessage();
+public record View() {
+    public static void update(Message m) {
         switch (m.getType()) {
             case REGISTRATION -> System.out.print("New user: ");
             case SHOW_USERS -> System.out.println("Users online:");

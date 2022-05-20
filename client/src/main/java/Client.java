@@ -6,7 +6,6 @@ public class Client implements Runnable{
     private Socket socket;
     private Message lastMessage;
     private ObjectOutputStream writer;
-    private final View viewer = new View(this);
 
     @Override
     public void run() {
@@ -19,7 +18,7 @@ public class Client implements Runnable{
             controller.start();
             while (isConnected()){
                 lastMessage = (Message) reader.readObject();
-                viewer.update();
+                View.update(lastMessage);
                 MessageType type = lastMessage.getType();
                 if (type.equals(MessageType.EXIT)) break;
             }
@@ -48,10 +47,6 @@ public class Client implements Runnable{
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public Message getLastMessage(){
-        return lastMessage;
     }
 
     public boolean isConnected() {
