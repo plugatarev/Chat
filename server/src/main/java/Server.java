@@ -34,7 +34,7 @@ public class Server implements Runnable{
             }
         }
         catch (IOException ex){
-            ex.printStackTrace();
+            LOG.debug("The server has finished working");
         }
         finally {
             close();
