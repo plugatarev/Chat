@@ -6,19 +6,16 @@ public class Message implements Serializable {
     String message;
     final MessageType type;
     String senderName;
-    private final Calendar date;
 
     public Message(String message, MessageType type){
         this.message = message;
         this.type = type;
-        this.date = new GregorianCalendar();
     }
 
     public Message(String message, MessageType type, String senderName){
         this.message = message;
         this.type = type;
         this.senderName = senderName;
-        this.date = new GregorianCalendar();
     }
 
     public String getMessage(){
@@ -48,7 +45,7 @@ public class Message implements Serializable {
         while (start < message.length() && message.charAt(start) != ' '){
             start++;
         }
-        return message.substring(start);
+        return message.substring(++start);
     }
 
     public static MessageType getMessageType(String message){
