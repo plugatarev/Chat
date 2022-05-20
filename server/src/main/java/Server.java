@@ -52,7 +52,7 @@ public class Server implements Runnable{
             case SEND_USER -> {
                 User dst = new User(Message.getReceiverName(message.getMessage()));
                 if (clients.containsKey(dst)){
-                    sendToUser(message, writer);
+//                    sendToUser(message, writer);
                     sendToUser(new Message(Message.getMessageFromAddressedMessage(message.getMessage()),
                                     MessageType.SEND_USER, message.getSenderName()), clients.get(dst));
                 }
@@ -89,7 +89,10 @@ public class Server implements Runnable{
     }
     
     private void sendToEverybody(Message message) {
-        clients.forEach((key, value) -> sendToUser(message, value));
+        clients.entrySet()
+               .stream()
+               .filter(c -> !c.getKey().getName().equals(message.getSenderName()))
+               .forEach(c -> sendToUser(message, c.getValue()));
     }
 
     void sendToEverybodyExceptUser(Message message, ObjectOutputStream user){
