@@ -52,7 +52,6 @@ public class Server implements Runnable{
             case SEND_USER -> {
                 User dst = new User(Message.getReceiverName(message.getMessage()));
                 if (clients.containsKey(dst)){
-//                    sendToUser(message, writer);
                     sendToUser(new Message(Message.getMessageFromAddressedMessage(message.getMessage()),
                                     MessageType.SEND_USER, message.getSenderName()), clients.get(dst));
                 }
@@ -106,5 +105,4 @@ public class Server implements Runnable{
         clients.put(user, writer);
         return true;
     }
-
 }

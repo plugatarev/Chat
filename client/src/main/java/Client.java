@@ -4,7 +4,6 @@ import java.net.Socket;
 
 public class Client implements Runnable{
     private Socket socket;
-    private Message lastMessage;
     private ObjectOutputStream writer;
 
     @Override
@@ -16,6 +15,7 @@ public class Client implements Runnable{
             ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
             Thread controller = new Thread(new Controller(this));
             controller.start();
+            Message lastMessage;
             while (isConnected()){
                 lastMessage = (Message) reader.readObject();
                 View.update(lastMessage);
