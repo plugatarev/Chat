@@ -30,17 +30,17 @@ public class Controller implements Runnable {
                 Message newLogin = (Message) reader.readObject();
                 user = new User(newLogin.getMessage());
             }
-            LOG.debug("User=" + user.getName() + " registration");
-            server.sendMessage(new Message(user.getName() + " registration", MessageType.REGISTRATION), writer);
+            LOG.debug("User=" + user.name() + " registration");
+            server.sendMessage(new Message(user.name() + " registration", MessageType.REGISTRATION), writer);
             while (true){
                 Message receiveMessage = (Message) reader.readObject();
                 if (receiveMessage == null) break;
                 LOG.debug("Get message \""+ receiveMessage.getMessage()+"\"" + " Type=" + receiveMessage.getType()
-                        + " From=" + user.getName());
-                Message sendMessage = new Message(receiveMessage.getMessage(), receiveMessage.getType(), user.getName());
+                        + " From=" + user.name());
+                Message sendMessage = new Message(receiveMessage.getMessage(), receiveMessage.getType(), user.name());
                 if (receiveMessage.getType().equals(MessageType.EXIT)) server.removeOnlineUser(user);
                 LOG.debug("Send message \""+ sendMessage.getMessage()+"\"" + " Type=" + sendMessage.getType()
-                        + " TO=" + user.getName());
+                        + " TO=" + user.name());
                 server.sendMessage(sendMessage, writer);
             }
         }

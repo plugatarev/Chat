@@ -6,6 +6,11 @@ public class Message implements Serializable {
     String message;
     final MessageType type;
     String senderName;
+    String receiverName;
+
+    public String getReceiverName() {
+        return receiverName;
+    }
 
     public Message(String message, MessageType type){
         this.message = message;

@@ -13,7 +13,7 @@ public class Server implements Runnable{
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     public List<String> getOnlineUsersName(){
-        return clients.keySet().stream().map(User::getName).toList();
+        return clients.keySet().stream().map(User::name).toList();
     }
 
     public void removeOnlineUser(User user){
@@ -90,7 +90,7 @@ public class Server implements Runnable{
     private void sendToEverybody(Message message) {
         clients.entrySet()
                .stream()
-               .filter(c -> !c.getKey().getName().equals(message.getSenderName()))
+               .filter(c -> !c.getKey().name().equals(message.getSenderName()))
                .forEach(c -> sendToUser(message, c.getValue()));
     }
 
