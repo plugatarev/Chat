@@ -10,7 +10,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.plugatarev.Chat</groupId>
+            <groupId>com.github.plugatarev</groupId>
             <artifactId>utils</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
