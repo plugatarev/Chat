@@ -45,6 +45,7 @@ public class ClientController implements Runnable{
 
     public void receive(Message message) {
         switch (message.type) {
+            // CR: send message with login
             case SEND_EVERYBODY, SEND_USER -> clientService.send(new Message(message.getMessage(), message.getType(), login, message.getReceiverName()));
             case SHOW_USERS -> {
                 String names = clientService.getOnlineUsers().toString();
@@ -58,11 +59,12 @@ public class ClientController implements Runnable{
                 else {
                     login = message.getMessage();
                     clientService.send(new Message("Successful registration", MessageType.SEND_USER, null, login));
+                    // CR: only this send is needed
                     clientService.send(new Message("Successful registration", MessageType.SEND_EVERYBODY, login));
                 }
             }
             case EXIT -> {
-                clientService.send(new Message("You are left chat", MessageType.EXIT, null, login));
+                clientService.send(new Message("You left the chat", MessageType.EXIT, null, login));
                 clientService.send(new Message(login + "left chat", MessageType.SEND_EVERYBODY, login));
                 clientService.delete(new Client(login, writer));
             }

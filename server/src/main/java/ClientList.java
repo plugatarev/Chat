@@ -3,11 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClientList {
-    private final List<Client> clients;
-
-    public ClientList(){
-        clients = new ArrayList<>();
-    }
+    private final List<Client> clients = new ArrayList<>();
 
     public synchronized void add(Client client){
         clients.add(client);
@@ -20,6 +16,8 @@ public class ClientList {
     public synchronized List<Client> getClients(){
         return clients;
     }
+
+//    public synchronized void forEach(Runnable)
 
     public synchronized ObjectOutputStream getWriter(String client){
         for (Client c : clients){

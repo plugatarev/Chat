@@ -1,21 +1,39 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 
-public record Controller(Client client) implements Runnable {
+public class Controller(Socket socket) implements Runnable {
+
+    ObjectOutputStream writer;
 
     @Override
     public void run() {
         BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+        writer = new ObjectOutputStream(socket.getOutputStream());
+        // CR: validate login
         System.out.print("Enter the desired login: ");
         try {
             String line;
-            while (client.isConnected()) {
+            while (!socket.isClosed()) {
+                // CR: use non-blocking channel (nio)
                 line = consoleReader.readLine();
-                if (line.equals("")) continue;
-                client.sendMessage(createMessage(line));
+                Message message = createMessage(line);
+                if (message == null) continue;
+                sendMessage(message);
             }
         } catch (IOException e) {
+            System.out.println("Socket closed");
+        }
+    }
+
+    private void sendMessage(Message message){
+        try {
+            writer.writeObject(message);
+            writer.flush();
+        }
+        catch (IOException e){
             System.out.println("Socket closed");
         }
     }
@@ -28,12 +46,12 @@ public record Controller(Client client) implements Runnable {
             return new Message(message, MessageType.SEND_EVERYBODY);
         }
         int start = 1;
-        while (start < message.length() && message.charAt(start) != ' ') {
-            start++;
+        int endIndex = message.indexOf(' ');
+        if (endIndex == -1) {
+            endIndex = message.length();
         }
-        String receiver = message.substring(1, start);
-        String msg = " ";
-        if (start < message.length()) msg = message.substring(++start);
-        return new Message(msg, MessageType.SEND_USER, null, receiver);
+        String receiver = message.substring(1, endIndex);
+        message =  endIndex == message.length() ? "" : message.substring(endIndex);
+        return new Message(message, MessageType.SEND_USER, null, receiver);
     }
 }

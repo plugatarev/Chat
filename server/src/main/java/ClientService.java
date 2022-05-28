@@ -18,6 +18,7 @@ public class ClientService implements Runnable{
     @Override
     public void run() {
         try {
+            // CR: move to Main
             socket = new ServerSocket();
             socket.bind(new InetSocketAddress("localhost", PORT));
             LOG.debug("Server starting on port " + PORT);
@@ -29,7 +30,7 @@ public class ClientService implements Runnable{
             }
         }
         catch (IOException ex){
-            LOG.debug("The server has finished working");
+            LOG.error("The server stopped working because of exception: ", ex);
         }
         finally {
             close();
@@ -49,8 +50,9 @@ public class ClientService implements Runnable{
     public synchronized void send(Message message) {
         if (message.getType() == MessageType.SEND_EVERYBODY){
             for (Client c : clients.getClients()){
-                if (!message.senderName.equals(c.name())) send(new Message(message.getMessage(), MessageType.SEND_USER,
-                        message.senderName, c.name()));
+                String sender = message.senderName;
+                if (sender != null && sender.equals(c.name())) continue;
+                send(new Message(message.getMessage(), MessageType.SEND_USER, sender, c.name()));
             }
             return;
         }
@@ -62,6 +64,13 @@ public class ClientService implements Runnable{
         }
         write(message, writer);
     }
+
+//    static class ClientService {
+//        private final List<Client> clients;
+//
+//        public synchronized void send() {}
+//        public synchronized void register() {}
+//    }
 
     public synchronized void write(Message message, ObjectOutputStream writer){
         try{
@@ -82,6 +91,7 @@ public class ClientService implements Runnable{
 
 
     public synchronized boolean register(Client client) {
+        // CR: exists(String)
         if (clients.getWriter(client.name()) != null) return false;
         String name = client.name();
         if (name.equals("/exit") || name.equals("/list") || containsWhitespace(name) || name.charAt(0) == '@') return false;
