@@ -73,7 +73,7 @@ public class ClientService implements Runnable{
         }
     }
 
-    private boolean containsSpace(String string){
+    private boolean containsWhitespace(String string){
         for (int i = 0; i < string.length(); i++){
             if (string.charAt(i) == ' ') return true;
         }
@@ -84,7 +84,7 @@ public class ClientService implements Runnable{
     public synchronized boolean register(Client client) {
         if (clients.getWriter(client.name()) != null) return false;
         String name = client.name();
-        if (name.equals("/exit") || name.equals("/list") || containsSpace(name) || name.charAt(0) == '@') return false;
+        if (name.equals("/exit") || name.equals("/list") || containsWhitespace(name) || name.charAt(0) == '@') return false;
         clients.add(client);
         return true;
     }
