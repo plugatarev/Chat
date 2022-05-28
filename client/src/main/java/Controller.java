@@ -32,7 +32,8 @@ public record Controller(Client client) implements Runnable {
             start++;
         }
         String receiver = message.substring(1, start);
-        String msg = message.substring(++start);
+        String msg = " ";
+        if (start < message.length()) msg = message.substring(++start);
         return new Message(msg, MessageType.SEND_USER, null, receiver);
     }
 }
