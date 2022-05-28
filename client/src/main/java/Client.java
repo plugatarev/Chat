@@ -23,7 +23,7 @@ public class Client implements Runnable{
             }
         } catch (Exception e) {
             System.out.println("Server is not available");
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         finally {
             close();
