@@ -5,17 +5,16 @@ import java.net.Socket;
 public class Client implements Runnable{
     private Socket socket;
     private ObjectOutputStream writer;
-
     @Override
     public void run() {
         try{
             socket = new Socket();
             socket.connect(new InetSocketAddress("localhost", 8080));
             writer = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
             Thread controller = new Thread(new Controller(this));
             controller.start();
             Message lastMessage;
+            ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
             while (isConnected()){
                 lastMessage = (Message) reader.readObject();
                 View.update(lastMessage);
@@ -24,6 +23,7 @@ public class Client implements Runnable{
             }
         } catch (Exception e) {
             System.out.println("Server is not available");
+            e.printStackTrace();
         }
         finally {
             close();

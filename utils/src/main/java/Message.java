@@ -1,10 +1,8 @@
 import java.io.Serializable;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 
 public class Message implements Serializable {
     String message;
-    final MessageType type;
+    MessageType type;
     String senderName;
     String receiverName;
 
@@ -23,6 +21,13 @@ public class Message implements Serializable {
         this.senderName = senderName;
     }
 
+    public Message(String message, MessageType type, String senderName, String receiverName){
+        this.message = message;
+        this.type = type;
+        this.senderName = senderName;
+        this.receiverName = receiverName;
+    }
+
     public String getMessage(){
         return message;
     }
@@ -35,32 +40,7 @@ public class Message implements Serializable {
         return senderName;
     }
 
-    public static String getReceiverName(String message){
-        if (message.charAt(0) != '@') return null;
-        int i = 1;
-        while (i < message.length() && message.charAt(i) != ' '){
-            i++;
-        }
-        return message.substring(1, i);
-    }
-
-    public static String getMessageFromAddressedMessage(String message){
-        if (message.charAt(0) != '@') return null;
-        int start = 1;
-        while (start < message.length() && message.charAt(start) != ' '){
-            start++;
-        }
-        return message.substring(++start);
-    }
-
-    public static MessageType getMessageType(String message){
-        if (message.equals("/exit")) return MessageType.EXIT;
-        if (message.charAt(0) == '@') return MessageType.SEND_USER;
-        if (message.equals("/list")) return MessageType.SHOW_USERS;
-        return MessageType.SEND_EVERYBODY;
-    }
-
-    public void setMessage(String message){
-        this.message = message;
+    public void setType(MessageType type){
+        this.type = type;
     }
 }
