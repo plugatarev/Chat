@@ -21,12 +21,13 @@ public class ClientController implements Runnable{
 
     @Override
     public void run() {
-        try {
-            ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream());
+        try (ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream())){
             writer = new ObjectOutputStream(clientSocket.getOutputStream());
             while (true) {
                 Message lastMessage = (Message) reader.readObject();
-                if (login == null) lastMessage.setType(MessageType.REGISTRATION);
+                if (login == null && lastMessage.getType() != MessageType.REGISTRATION){
+                    throw new RuntimeException("Login message expected");
+                }
                 else LOG.debug("User=" + login + " registration");
                 LOG.debug("Get message \""+ lastMessage.getMessage() + "\"" + " Type=" + lastMessage.getType()
                         + " From=" + login);
@@ -35,8 +36,7 @@ public class ClientController implements Runnable{
             }
         }
         catch (IOException | ClassNotFoundException e){
-            e.printStackTrace();
-            //TODO
+            LOG.error("Client " + login + " not available because of exception:", e);
         }
         finally {
             close();
@@ -45,8 +45,7 @@ public class ClientController implements Runnable{
 
     public void receive(Message message) {
         switch (message.type) {
-            // CR: send message with login
-            case SEND_EVERYBODY, SEND_USER -> clientService.send(new Message(message.getMessage(), message.getType(), login, message.getReceiverName()));
+            case SEND_EVERYBODY, SEND_USER -> clientService.send(message);
             case SHOW_USERS -> {
                 String names = clientService.getOnlineUsers().toString();
                 clientService.send(new Message(names, MessageType.SHOW_USERS, login, login));
@@ -58,14 +57,12 @@ public class ClientController implements Runnable{
                 }
                 else {
                     login = message.getMessage();
-                    clientService.send(new Message("Successful registration", MessageType.SEND_USER, null, login));
-                    // CR: only this send is needed
-                    clientService.send(new Message("Successful registration", MessageType.SEND_EVERYBODY, login));
+                    clientService.send(new Message(login + " successful registration", MessageType.REGISTRATION, null, login));
                 }
             }
             case EXIT -> {
-                clientService.send(new Message("You left the chat", MessageType.EXIT, null, login));
-                clientService.send(new Message(login + "left chat", MessageType.SEND_EVERYBODY, login));
+                clientService.send(new Message("You left chat", MessageType.EXIT, null, login));
+                clientService.send(new Message(login + " left chat", MessageType.SEND_EVERYBODY));
                 clientService.delete(new Client(login, writer));
             }
         }

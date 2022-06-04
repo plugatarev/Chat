@@ -1,76 +1,36 @@
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 
-public class ClientService implements Runnable{
+public class ClientService{
 
-    private static final int PORT = 8080;
-    private ServerSocket socket;
-    private final ClientList clients = new ClientList();
-    private static final Logger LOG = LoggerFactory.getLogger(ClientService.class);
-
-    @Override
-    public void run() {
-        try {
-            // CR: move to Main
-            socket = new ServerSocket();
-            socket.bind(new InetSocketAddress("localhost", PORT));
-            LOG.debug("Server starting on port " + PORT);
-            while (true) {
-                Socket clientSocket = socket.accept();
-                LOG.debug("Client started...");
-                Thread t = new Thread(new ClientController( this, clientSocket));
-                t.start();
-            }
-        }
-        catch (IOException ex){
-            LOG.error("The server stopped working because of exception: ", ex);
-        }
-        finally {
-            close();
-        }
-    }
-
-    private synchronized void close() {
-        if (socket != null) {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    private final List<Client> clients = new ArrayList<>();
 
     public synchronized void send(Message message) {
-        if (message.getType() == MessageType.SEND_EVERYBODY){
-            for (Client c : clients.getClients()){
-                String sender = message.senderName;
+        if (message.getType() == MessageType.SEND_EVERYBODY || message.getType() == MessageType.REGISTRATION){
+            String sender = message.senderName;
+            for (Client c : clients){
                 if (sender != null && sender.equals(c.name())) continue;
-                send(new Message(message.getMessage(), MessageType.SEND_USER, sender, c.name()));
+                message.setReceiverName(c.name());
+                write(new Message(message.getMessage(), message.type, sender, c.name()), c.writer());
             }
             return;
         }
         if (message.getReceiverName() == null) throw new IllegalStateException("Receiver name not set");
-        ObjectOutputStream writer = clients.getWriter(message.receiverName);
-        if (writer == null) {
-            send(new Message("Such user doesn't exists", MessageType.SEND_USER,null, message.senderName));
-            return;
+        if (!containsClient(message.receiverName)){
+            write(new Message("Such user doesn't exists", MessageType.SEND_USER,null, message.senderName),
+                    getWriter(message.senderName));
+
         }
-        write(message, writer);
+        else{
+            write(message,getWriter(message.receiverName));
+        }
     }
 
-//    static class ClientService {
-//        private final List<Client> clients;
-//
-//        public synchronized void send() {}
-//        public synchronized void register() {}
-//    }
+    private boolean containsClient(String name){
+        return clients.stream().map(Client::name).anyMatch(c -> c.equals(name));
+    }
 
     public synchronized void write(Message message, ObjectOutputStream writer){
         try{
@@ -91,19 +51,33 @@ public class ClientService implements Runnable{
 
 
     public synchronized boolean register(Client client) {
-        // CR: exists(String)
-        if (clients.getWriter(client.name()) != null) return false;
+        if (containsClient(client.name())) return false;
         String name = client.name();
         if (name.equals("/exit") || name.equals("/list") || containsWhitespace(name) || name.charAt(0) == '@') return false;
-        clients.add(client);
+        add(client);
         return true;
     }
 
     public synchronized List<String> getOnlineUsers(){
-        return clients.getClients().stream().map(Client::name).toList();
+        return clients.stream().map(Client::name).toList();
     }
 
     public synchronized void delete(Client client) {
-        clients.removed(client);
+        removed(client);
+    }
+
+    private synchronized void add(Client client){
+        clients.add(client);
+    }
+
+    private synchronized void removed(Client client){
+        clients.remove(client);
+    }
+
+    private synchronized ObjectOutputStream getWriter(String client){
+        for (Client c : clients){
+            if (c.name().equals(client)) return c.writer();
+        }
+        return null;
     }
 }

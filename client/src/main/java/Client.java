@@ -1,55 +1,42 @@
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Client implements Runnable{
-    private Socket socket;
-    private ObjectOutputStream writer;
-    @Override
-    public void run() {
-        try{
-            socket = new Socket();
+public class Client{
+    private final AtomicBoolean isRegistration = new AtomicBoolean(false);
+    public void start() {
+        try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress("localhost", 8080));
-            writer = new ObjectOutputStream(socket.getOutputStream());
-            Thread controller = new Thread(new Controller(this));
+            Thread controller = new Thread(new Controller(this, socket));
             controller.start();
-            Message lastMessage;
             ObjectInputStream reader = new ObjectInputStream(socket.getInputStream());
-            while (isConnected()){
-                lastMessage = (Message) reader.readObject();
+            Message lastMessage;
+            MessageType type;
+            while (!socket.isClosed()) {
+                if (!isRegistration.get()) {
+                    synchronized (isRegistration){
+                        lastMessage = (Message) reader.readObject();
+                        type = lastMessage.getType();
+                        if (type == MessageType.REGISTRATION) isRegistration.set(true);
+                    }
+                }
+                else{
+                    lastMessage = (Message) reader.readObject();
+                    type = lastMessage.getType();
+                }
                 View.update(lastMessage);
-                MessageType type = lastMessage.getType();
-                if (type.equals(MessageType.EXIT)) break;
+                if (type == MessageType.EXIT) break;
             }
         } catch (Exception e) {
-            System.out.println("Server is not available");
-//            e.printStackTrace();
-        }
-        finally {
-            close();
-        }
-    }
-
-    public void sendMessage(Message message){
-        try {
-            writer.writeObject(message);
-            writer.flush();
-        }
-        catch (IOException e){
-            System.out.println("Socket closed");
-        }
-    }
-
-    private void close() {
-        try {
-            writer.close();
-            socket.close();
-        } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("Server is not available because of exception: " + e);
         }
     }
 
-    public boolean isConnected() {
-        return !socket.isClosed();
+    public boolean isRegistration(){
+        synchronized (isRegistration) {
+            return isRegistration.get();
+        }
     }
 }

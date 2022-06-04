@@ -40,7 +40,5 @@ public class Message implements Serializable {
         return senderName;
     }
 
-    public void setType(MessageType type){
-        this.type = type;
-    }
+    public void setReceiverName(String name) { this.receiverName = name; }
 }
