@@ -25,10 +25,14 @@ public class ClientController implements Runnable{
             writer = new ObjectOutputStream(clientSocket.getOutputStream());
             while (true) {
                 Message lastMessage = (Message) reader.readObject();
-                if (login == null && lastMessage.getType() != MessageType.REGISTRATION){
-                    throw new RuntimeException("Login message expected");
+                if (login == null){
+                    if (lastMessage.getType() != MessageType.REGISTRATION) {
+                        throw new RuntimeException("Login message expected");
+                    }
                 }
-                else LOG.debug("User=" + login + " registration");
+                else {
+                    LOG.debug("User=" + login + " registration");
+                }
                 LOG.debug("Get message \""+ lastMessage.getMessage() + "\"" + " Type=" + lastMessage.getType()
                         + " From=" + login);
                 receive(lastMessage);
@@ -47,13 +51,20 @@ public class ClientController implements Runnable{
         switch (message.type) {
             case SEND_EVERYBODY, SEND_USER -> clientService.send(message);
             case SHOW_USERS -> {
-                String names = clientService.getOnlineUsers().toString();
+                String names = clientService.getClientNames().toString();
                 clientService.send(new Message(names, MessageType.SHOW_USERS, login, login));
             }
             case REGISTRATION ->{
                 boolean isRegister = clientService.register(new Client(message.getMessage(), writer));
                 if (!isRegister) {
-                    clientService.write(new Message("This name is busy or incorrect, try again: ", MessageType.NOT_REGISTRATION), writer);
+                        try{
+                            writer.writeObject(new Message("This name is busy or incorrect, try again: ", MessageType.NOT_REGISTRATION));
+                            writer.flush();
+                        }
+                        catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
                 else {
                     login = message.getMessage();
