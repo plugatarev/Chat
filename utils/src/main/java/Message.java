@@ -1,14 +1,10 @@
 import java.io.Serializable;
 
 public class Message implements Serializable {
-    String message;
-    MessageType type;
-    String senderName;
-    String receiverName;
-
-    public String getReceiverName() {
-        return receiverName;
-    }
+    private final String message;
+    private MessageType type;
+    private String senderName;
+    private String receiverName;
 
     public Message(String message, MessageType type){
         this.message = message;
@@ -28,17 +24,23 @@ public class Message implements Serializable {
         this.receiverName = receiverName;
     }
 
-    public String getMessage(){
+    public String message(){
         return message;
     }
 
-    public MessageType getType() {
+    public MessageType type() {
         return type;
     }
 
-    public String getSenderName(){
+    public String senderName(){
         return senderName;
     }
 
+    public String receiverName() { return receiverName; }
+
     public void setReceiverName(String name) { this.receiverName = name; }
+
+    public void setMessageType(MessageType type) { this.type = type; }
+
+    public void setSenderName(String name) { this.senderName = name; }
 }

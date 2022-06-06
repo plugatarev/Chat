@@ -8,16 +8,16 @@ public class ClientService{
     private final List<Client> clients = new ArrayList<>();
 
     public synchronized void sendAll(String sender, Message message) {
-        if (message.getType() != MessageType.SEND_EVERYBODY || message.getType() != MessageType.REGISTRATION){
-            // TODO
-            throw new IllegalStateException("");
+        if (message.type() != MessageType.SEND_EVERYBODY && message.type() != MessageType.REGISTRATION){
+            throw new IllegalStateException("Invalid message type to send to all clients");
         }
         for (Client c : clients){
-            if (sender != null && sender.equals(c.name())) continue;
+            if (message.senderName() != null && sender.equals(c.name())) continue;
             message.setReceiverName(c.name());
+            if (message.type() == MessageType.SEND_EVERYBODY) message.setMessageType(MessageType.SEND_USER);
             ObjectOutputStream writer = c.writer();
             try{
-                writer.writeObject(new Message(message.getMessage(), message.type, sender, c.name()));
+                writer.writeObject(new Message(message.message(), message.type(), sender, c.name()));
                 writer.flush();
             }
             catch (IOException e) {
@@ -27,19 +27,24 @@ public class ClientService{
     }
 
     public synchronized void send(String receiver, Message message) {
-        if (message.getType() == MessageType.SEND_EVERYBODY || message.getType() == MessageType.REGISTRATION){
-            throw new IllegalStateException("");
+        if (message.type() == MessageType.SEND_EVERYBODY || message.type() == MessageType.REGISTRATION){
+            throw new IllegalStateException("Invalid message type to send to client");
         }
-        if (!containsClient(message.receiverName)){
-            ObjectOutputStream writer = getWriter(message.senderName);
-            try{
-                writer.writeObject(new Message("Such user doesn't exists", MessageType.SEND_USER,null, message.senderName));
-                writer.flush();
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
+        ObjectOutputStream writer;
+        if (!containsClient(receiver)){
+            writer = getWriter(message.senderName());
+            message = new Message("Such user doesn't exists", MessageType.SEND_USER,null, message.senderName());
+        }
+        else{
+            writer = getWriter(receiver);
+        }
 
+        try{
+            writer.writeObject(message);
+            writer.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -88,19 +93,9 @@ public class ClientService{
         return clients.stream().map(Client::name).anyMatch(c -> c.equals(name));
     }
 
-    private boolean containsWhitespace(String string){
-        for (int i = 0; i < string.length(); i++){
-            if (string.charAt(i) == ' ') return true;
-        }
-        return false;
-    }
-
-
-    public synchronized boolean register(String clientName, ObjectOutputStream oos) {
-        if (containsClient(client.name())) return false;
-        String name = client.name();
-        if (name.equals("/exit") || name.equals("/list") || containsWhitespace(name) || name.charAt(0) == '@') return false;
-        clients.add(client);
+    public synchronized boolean register(String clientName, ObjectOutputStream outputStream) {
+        if (containsClient(clientName)) return false;
+        clients.add(new Client(clientName, outputStream));
         return true;
     }
 
@@ -109,7 +104,14 @@ public class ClientService{
     }
 
     public synchronized void delete(String clientName) {
-        clients.remove(client);
+        Client client = null;
+        for (Client c : clients){
+            if (c.name().equals(clientName)){
+                client = c;
+                break;
+            }
+        }
+        if (client != null) clients.remove(client);
     }
 
     private ObjectOutputStream getWriter(String client){

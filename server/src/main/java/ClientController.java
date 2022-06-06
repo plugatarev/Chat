@@ -26,17 +26,24 @@ public class ClientController implements Runnable{
             while (true) {
                 Message lastMessage = (Message) reader.readObject();
                 if (login == null){
-                    if (lastMessage.getType() != MessageType.REGISTRATION) {
-                        throw new RuntimeException("Login message expected");
+                    if (lastMessage.type() != MessageType.REGISTRATION) {
+                        try{
+                            writer.writeObject(new Message("The server was waiting for the client to register but received a different message", MessageType.NOT_REGISTRATION));
+                            writer.flush();
+                        }
+                        catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        return;
                     }
                 }
                 else {
                     LOG.debug("User=" + login + " registration");
                 }
-                LOG.debug("Get message \""+ lastMessage.getMessage() + "\"" + " Type=" + lastMessage.getType()
+                LOG.debug("Get message \""+ lastMessage.message() + "\"" + " Type=" + lastMessage.type()
                         + " From=" + login);
                 receive(lastMessage);
-                if (lastMessage.getType() == MessageType.EXIT) break;
+                if (lastMessage.type() == MessageType.EXIT) break;
             }
         }
         catch (IOException | ClassNotFoundException e){
@@ -48,35 +55,46 @@ public class ClientController implements Runnable{
     }
 
     public void receive(Message message) {
-        switch (message.type) {
-            case SEND_EVERYBODY, SEND_USER -> clientService.send(message);
-            case SHOW_USERS -> {
-                String names = clientService.getClientNames().toString();
-                clientService.send(new Message(names, MessageType.SHOW_USERS, login, login));
-            }
+        switch (message.type()) {
             case REGISTRATION ->{
-                boolean isRegister = clientService.register(new Client(message.getMessage(), writer));
+                String clientName = message.message();
+                boolean isRegister = !clientName.equals("/exit") && !clientName.equals("/list") && !containsWhitespace(clientName)
+                        && clientName.charAt(0) != '@' && clientService.register(message.message(), writer);
+
                 if (!isRegister) {
-                        try{
-                            writer.writeObject(new Message("This name is busy or incorrect, try again: ", MessageType.NOT_REGISTRATION));
-                            writer.flush();
-                        }
-                        catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                    try{
+                        writer.writeObject(new Message("This name is busy or incorrect, try again: ", MessageType.NOT_REGISTRATION));
+                        writer.flush();
+                    }
+                    catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
                 else {
-                    login = message.getMessage();
-                    clientService.send(new Message(login + " successful registration", MessageType.REGISTRATION, null, login));
+                    login = message.message();
+                    clientService.sendAll(login, new Message(login + " successful registration", MessageType.REGISTRATION));
                 }
             }
-            case EXIT -> {
-                clientService.send(new Message("You left chat", MessageType.EXIT, null, login));
-                clientService.send(new Message(login + " left chat", MessageType.SEND_EVERYBODY));
-                clientService.delete(new Client(login, writer));
+            case SEND_EVERYBODY -> clientService.sendAll(login, message);
+            case SEND_USER -> clientService.send(message.receiverName(), message);
+            case SHOW_USERS -> {
+                String names = clientService.getClientNames().toString();
+                clientService.send(login, new Message(names, MessageType.SHOW_USERS, login));
             }
+            case EXIT -> {
+                clientService.send(login, new Message("You left chat", MessageType.EXIT, login));
+                clientService.sendAll(login, new Message(login + " left chat", MessageType.SEND_EVERYBODY, login));
+                clientService.delete(login);
+            }
+            default -> throw new IllegalStateException("The server received a message with invalid message type");
         }
+    }
+
+    private boolean containsWhitespace(String string){
+        for (int i = 0; i < string.length(); i++){
+            if (string.charAt(i) == ' ') return true;
+        }
+        return false;
     }
 
     private void close() {
