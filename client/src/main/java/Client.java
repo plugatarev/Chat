@@ -5,17 +5,16 @@ import java.net.Socket;
 public class Client{
     private ObjectOutputStream objectOutputStream;
     private ObjectInputStream objectInputStream;
-    private BufferedReader consoleReader;
     private String login;
     private boolean isActive = true;
 
     public void start() {
-        try (Socket socket = new Socket()) {
+        try (Socket socket = new Socket();
+             BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in))) {
             socket.connect(new InetSocketAddress("localhost", 8080));
             objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectInputStream = new ObjectInputStream(socket.getInputStream());
-            consoleReader = new BufferedReader(new InputStreamReader(System.in));
-            login = validateLogin();
+            login = validateLogin(consoleReader);
             Thread controller = new Thread(new Controller(this));
             controller.start();
             while (!socket.isClosed()) {
@@ -49,7 +48,7 @@ public class Client{
         return login;
     }
 
-    private String validateLogin() throws IOException, ClassNotFoundException {
+    private String validateLogin(BufferedReader consoleReader) throws IOException, ClassNotFoundException {
         String line;
         System.out.print("Enter the desired login: ");
         while (true) {
@@ -58,8 +57,7 @@ public class Client{
                 System.out.print("Incorrect login, try again: ");
                 continue;
             }
-            objectOutputStream.writeObject(new Message(line, MessageType.REGISTRATION));
-            objectOutputStream.flush();
+            sendMessage(new Message(line, MessageType.REGISTRATION));
             Message lastMessage = (Message) objectInputStream.readObject();
             View.update(lastMessage);
             if (lastMessage.type() == MessageType.REGISTRATION){
