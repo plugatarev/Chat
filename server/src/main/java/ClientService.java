@@ -48,51 +48,6 @@ public class ClientService{
         }
     }
 
-//    public synchronized void send(Message message) {
-//        if (message.getType() == MessageType.SEND_EVERYBODY || message.getType() == MessageType.REGISTRATION){
-//            String sender = message.senderName;
-//            for (Client c : clients){
-//                if (sender != null && sender.equals(c.name())) continue;
-//                message.setReceiverName(c.name());
-//                ObjectOutputStream writer = c.writer();
-//                try{
-//                    writer.writeObject(new Message(message.getMessage(), message.type, sender, c.name()));
-//                    writer.flush();
-//                }
-//                catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//            return;
-//        }
-//        if (message.getReceiverName() == null) throw new IllegalStateException("Receiver name not set");
-//        if (!containsClient(message.receiverName)){
-//            ObjectOutputStream writer = getWriter(message.senderName);
-//            try{
-//                writer.writeObject(new Message("Such user doesn't exists", MessageType.SEND_USER,null, message.senderName));
-//                writer.flush();
-//            }
-//            catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//
-//        }
-//        else{
-//            ObjectOutputStream writer = getWriter(message.receiverName);
-//            try{
-//                writer.writeObject(message);
-//                writer.flush();
-//            }
-//            catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//    }
-
-    private boolean containsClient(String name){
-        return clients.stream().map(Client::name).anyMatch(c -> c.equals(name));
-    }
-
     public synchronized boolean register(String clientName, ObjectOutputStream outputStream) {
         if (containsClient(clientName)) return false;
         clients.add(new Client(clientName, outputStream));
@@ -113,6 +68,11 @@ public class ClientService{
         }
         if (client != null) clients.remove(client);
     }
+
+    private boolean containsClient(String name){
+        return clients.stream().map(Client::name).anyMatch(c -> c.equals(name));
+    }
+
 
     private ObjectOutputStream getWriter(String client){
         for (Client c : clients){
