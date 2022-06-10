@@ -40,8 +40,7 @@ public class ClientController implements Runnable{
                 else {
                     LOG.debug("User=" + login + " registration");
                 }
-                LOG.debug("Get message \""+ lastMessage.message() + "\"" + " Type=" + lastMessage.type()
-                        + " From=" + login);
+                LOG.debug("Get message \""+ lastMessage.message() + "\"" + " Type=" + lastMessage.type() + " From=" + login);
                 receive(lastMessage);
                 if (lastMessage.type() == MessageType.EXIT) break;
             }
