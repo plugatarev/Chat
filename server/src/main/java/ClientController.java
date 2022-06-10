@@ -6,7 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public class ClientController implements Runnable{
+public class ClientController implements Runnable, Writer {
 
     private final ClientService clientService;
     private final Socket clientSocket;
@@ -46,7 +46,7 @@ public class ClientController implements Runnable{
             }
         }
         catch (IOException | ClassNotFoundException e){
-            LOG.error("Client " + login + " not available because of exception:", e);
+            LOG.error("ClientService.Client " + login + " not available because of exception:", e);
         }
         finally {
             close();
@@ -75,35 +75,38 @@ public class ClientController implements Runnable{
                 }
             }
             case SEND_EVERYBODY -> clientService.sendAll(login, message);
-            case SEND_USER -> clientService.send(message.receiverName(), message);
+            case SEND_USER -> clientService.sendTo(message.receiverName(), message);
             case SHOW_USERS -> {
                 String names = clientService.getClientNames().toString();
-                clientService.send(login, new Message(names, MessageType.SHOW_USERS, login));
+                clientService.sendTo(login, new Message(names, MessageType.SHOW_USERS, login));
             }
             case EXIT -> {
-                clientService.send(login, new Message("You left chat", MessageType.EXIT, login));
+                clientService.sendTo(login, new Message("You left chat", MessageType.EXIT, login));
                 clientService.sendAll(login, new Message(login + " left chat", MessageType.SEND_EVERYBODY, login));
                 clientService.delete(login);
             }
+            // CR: notify user
             default -> throw new IllegalStateException("The server received a message with invalid message type");
         }
     }
 
     private boolean containsWhitespace(String string){
-        for (int i = 0; i < string.length(); i++){
-            if (string.charAt(i) == ' ') return true;
-        }
-        return false;
+        return string.indexOf(' ') != -1;
     }
 
     private void close() {
         if (clientSocket != null) {
             try {
-                writer.close();
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public void write(Message message) {
+//        writer.writeObject(message);
+//        writer.flush();
     }
 }

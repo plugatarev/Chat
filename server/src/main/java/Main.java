@@ -17,7 +17,7 @@ public class Main {
             LOG.debug("Server starting on port " + PORT);
             while (true) {
                 Socket clientSocket = socket.accept();
-                LOG.debug("Client started...");
+                LOG.debug("ClientService.Client started...");
                 Thread t = new Thread(new ClientController(service, clientSocket));
                 t.start();
             }

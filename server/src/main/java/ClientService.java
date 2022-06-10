@@ -26,7 +26,7 @@ public class ClientService{
         }
     }
 
-    public synchronized void send(String receiver, Message message) {
+    public synchronized void sendTo(String receiver, Message message) {
         if (message.type() == MessageType.SEND_EVERYBODY || message.type() == MessageType.REGISTRATION){
             throw new IllegalStateException("Invalid message type to send to client");
         }
@@ -80,4 +80,7 @@ public class ClientService{
         }
         return null;
     }
+
+    // CR: override equals and hashcode
+    private record Client(String name, ObjectOutputStream writer) {}
 }
