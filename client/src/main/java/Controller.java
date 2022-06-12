@@ -6,9 +6,9 @@ public record Controller(Client client) implements Runnable {
     public void run() {
         try (BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in))) {
             String line;
-            while (client.isActive()) {
-                // CR: use non-blocking channel (nio)
-                line = consoleReader.readLine();
+            while (client.isActive()){
+                if ((consoleReader.ready())) line = consoleReader.readLine();
+                else continue;
                 Message message = createMessage(line, client.login());
                 if (message == null) continue;
                 client.sendMessage(message);
