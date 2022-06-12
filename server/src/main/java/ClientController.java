@@ -27,13 +27,7 @@ public class ClientController implements Runnable, Writer {
                 Message lastMessage = (Message) reader.readObject();
                 if (login == null){
                     if (lastMessage.type() != MessageType.REGISTRATION) {
-                        try{
-                            writer.writeObject(new Message("The server was waiting for the client to register but received a different message", MessageType.NOT_REGISTRATION));
-                            writer.flush();
-                        }
-                        catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        write(new Message("The server was waiting for the client to register but received a different message", MessageType.NOT_REGISTRATION));
                         return;
                     }
                 }
@@ -57,17 +51,9 @@ public class ClientController implements Runnable, Writer {
         switch (message.type()) {
             case REGISTRATION ->{
                 String clientName = message.message();
-                boolean isRegister = !clientName.equals("/exit") && !clientName.equals("/list") && !containsWhitespace(clientName)
-                        && clientName.charAt(0) != '@' && clientService.register(message.message(), writer);
-
+                boolean isRegister = isValid(clientName) && clientService.register(message.message(), this);
                 if (!isRegister) {
-                    try{
-                        writer.writeObject(new Message("This name is busy or incorrect, try again: ", MessageType.NOT_REGISTRATION));
-                        writer.flush();
-                    }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    write(new Message(getReasonIncorrectName(clientName), MessageType.NOT_REGISTRATION));
                 }
                 else {
                     login = message.message();
@@ -75,7 +61,10 @@ public class ClientController implements Runnable, Writer {
                 }
             }
             case SEND_EVERYBODY -> clientService.sendAll(login, message);
-            case SEND_USER -> clientService.sendTo(message.receiverName(), message);
+            case SEND_USER -> {
+                clientService.sendTo(login, message);
+                clientService.sendTo(message.receiverName(), message);
+            }
             case SHOW_USERS -> {
                 String names = clientService.getClientNames().toString();
                 clientService.sendTo(login, new Message(names, MessageType.SHOW_USERS, login));
@@ -85,9 +74,21 @@ public class ClientController implements Runnable, Writer {
                 clientService.sendAll(login, new Message(login + " left chat", MessageType.SEND_EVERYBODY, login));
                 clientService.delete(login);
             }
-            // CR: notify user
-            default -> throw new IllegalStateException("The server received a message with invalid message type");
+            default -> {
+                clientService.sendTo(login, new Message("You send message with invalid message type", MessageType.EXIT, login));
+                throw new IllegalStateException("The server received a message with invalid message type");
+            }
         }
+    }
+
+    private String getReasonIncorrectName(String name) {
+        if (containsWhitespace(name)) return "Login must not contain white spaces, try again: ";
+        if (name.equals("/exit") || name.equals("/list") || name.charAt(0) == '@') return "Login must not be a command, try again: ";
+        return "This login is busy, try again: ";
+    }
+
+    private boolean isValid(String name){
+        return !name.equals("/exit") && !name.equals("/list") && !containsWhitespace(name) && name.charAt(0) != '@';
     }
 
     private boolean containsWhitespace(String string){
@@ -106,7 +107,12 @@ public class ClientController implements Runnable, Writer {
 
     @Override
     public void write(Message message) {
-//        writer.writeObject(message);
-//        writer.flush();
+        try{
+            writer.writeObject(message);
+            writer.flush();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

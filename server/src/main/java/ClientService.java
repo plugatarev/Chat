@@ -1,28 +1,18 @@
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ClientService{
 
-    private final List<Client> clients = new ArrayList<>();
+    private final HashSet<Client> clients = new HashSet<>();
 
     public synchronized void sendAll(String sender, Message message) {
         if (message.type() != MessageType.SEND_EVERYBODY && message.type() != MessageType.REGISTRATION){
             throw new IllegalStateException("Invalid message type to send to all clients");
         }
         for (Client c : clients){
-            if (message.senderName() != null && sender.equals(c.name())) continue;
             message.setReceiverName(c.name());
             if (message.type() == MessageType.SEND_EVERYBODY) message.setMessageType(MessageType.SEND_USER);
-            ObjectOutputStream writer = c.writer();
-            try{
-                writer.writeObject(new Message(message.message(), message.type(), sender, c.name()));
-                writer.flush();
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
+            Writer writer = c.writer();
+            writer.write(new Message(message.message(), message.type(), sender, c.name()));
         }
     }
 
@@ -30,26 +20,19 @@ public class ClientService{
         if (message.type() == MessageType.SEND_EVERYBODY || message.type() == MessageType.REGISTRATION){
             throw new IllegalStateException("Invalid message type to send to client");
         }
-        ObjectOutputStream writer;
-        if (!containsClient(receiver)){
+        Writer writer;
+        if (!clients.contains(new Client(receiver, null))){
             writer = getWriter(message.senderName());
             message = new Message("Such user doesn't exists", MessageType.SEND_USER,null, message.senderName());
         }
         else{
             writer = getWriter(receiver);
         }
-
-        try{
-            writer.writeObject(message);
-            writer.flush();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        writer.write(message);
     }
 
-    public synchronized boolean register(String clientName, ObjectOutputStream outputStream) {
-        if (containsClient(clientName)) return false;
+    public synchronized boolean register(String clientName, Writer outputStream) {
+        if (clients.contains(new Client(clientName, null))) return false;
         clients.add(new Client(clientName, outputStream));
         return true;
     }
@@ -69,12 +52,7 @@ public class ClientService{
         if (client != null) clients.remove(client);
     }
 
-    private boolean containsClient(String name){
-        return clients.stream().map(Client::name).anyMatch(c -> c.equals(name));
-    }
-
-
-    private ObjectOutputStream getWriter(String client){
+    private Writer getWriter(String client){
         for (Client c : clients){
             if (c.name().equals(client)) return c.writer();
         }
@@ -82,5 +60,18 @@ public class ClientService{
     }
 
     // CR: override equals and hashcode
-    private record Client(String name, ObjectOutputStream writer) {}
+    private record Client(String name, Writer writer) {
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (Client) obj;
+            return this.name.equals(that.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return name.hashCode();
+        }
+    }
 }
