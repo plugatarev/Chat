@@ -4,26 +4,21 @@ public class ClientService{
 
     private final HashSet<Client> clients = new HashSet<>();
 
-    public synchronized void sendAll(String sender, Message message) {
-        if (message.type() != MessageType.SEND_EVERYBODY && message.type() != MessageType.REGISTRATION){
-            throw new IllegalStateException("Invalid message type to send to all clients");
-        }
+    public synchronized void sendAll(BroadMessage message) {
         for (Client c : clients){
             message.setReceiverName(c.name());
             if (message.type() == MessageType.SEND_EVERYBODY) message.setMessageType(MessageType.SEND_USER);
             Writer writer = c.writer();
-            writer.write(new Message(message.message(), message.type(), sender, c.name()));
+            writer.write(new Message(message.message(), message.type(), message.senderName(), c.name()));
         }
     }
 
-    public synchronized void sendTo(String receiver, Message message) {
-        if (message.type() == MessageType.SEND_EVERYBODY || message.type() == MessageType.REGISTRATION){
-            throw new IllegalStateException("Invalid message type to send to client");
-        }
+    public synchronized void sendTo(UserMessage message) {
+        String receiver = message.receiverName();
         Writer writer;
         if (!clients.contains(new Client(receiver, null))){
             writer = getWriter(message.senderName());
-            message = new Message("Such user doesn't exists", MessageType.SEND_USER,null, message.senderName());
+            message = new UserMessage("Such user doesn't exists", MessageType.SEND_USER, null, message.senderName());
         }
         else{
             writer = getWriter(receiver);

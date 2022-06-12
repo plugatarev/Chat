@@ -1,2 +1,10 @@
-package PACKAGE_NAME;public class ControllerTest {
+import org.junit.Assert;
+import org.junit.Test;
+public class ControllerTest {
+
+    @Test
+    public void test(){
+
+    }
+
 }

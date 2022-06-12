@@ -48,7 +48,8 @@ public class ClientController implements Runnable, Writer {
     }
 
     public void receive(Message message) {
-        switch (message.type()) {
+        MessageType type = message.type();
+        switch (type) {
             case REGISTRATION ->{
                 String clientName = message.message();
                 boolean isRegister = isValid(clientName) && clientService.register(message.message(), this);
@@ -57,25 +58,25 @@ public class ClientController implements Runnable, Writer {
                 }
                 else {
                     login = message.message();
-                    clientService.sendAll(login, new Message(login + " successful registration", MessageType.REGISTRATION));
+                    clientService.sendAll(new BroadMessage(login + " successful registration", type, login));
                 }
             }
-            case SEND_EVERYBODY -> clientService.sendAll(login, message);
+            case SEND_EVERYBODY -> clientService.sendAll(new BroadMessage(message.message(), type, login));
             case SEND_USER -> {
-                clientService.sendTo(login, message);
-                clientService.sendTo(message.receiverName(), message);
+                clientService.sendTo(new UserMessage(message.message(), type, login, login));
+                clientService.sendTo(new UserMessage(message.message(), type, login, message.receiverName()));
             }
             case SHOW_USERS -> {
                 String names = clientService.getClientNames().toString();
-                clientService.sendTo(login, new Message(names, MessageType.SHOW_USERS, login));
+                clientService.sendTo(new UserMessage(names, type, null, login));
             }
             case EXIT -> {
-                clientService.sendTo(login, new Message("You left chat", MessageType.EXIT, login));
-                clientService.sendAll(login, new Message(login + " left chat", MessageType.SEND_EVERYBODY, login));
+                clientService.sendTo(new UserMessage("You left chat", type, login, login));
+                clientService.sendAll(new BroadMessage(login + " left chat", MessageType.SEND_EVERYBODY, login));
                 clientService.delete(login);
             }
             default -> {
-                clientService.sendTo(login, new Message("You send message with invalid message type", MessageType.EXIT, login));
+                clientService.sendTo(new UserMessage("You send message with invalid message type", MessageType.EXIT, login, login));
                 throw new IllegalStateException("The server received a message with invalid message type");
             }
         }
