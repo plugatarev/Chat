@@ -1,3 +1,6 @@
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -7,6 +10,7 @@ public class Client{
     private ObjectInputStream objectInputStream;
     private String login;
     private boolean isActive = true;
+    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
     public void start() {
         try (Socket socket = new Socket();
@@ -14,20 +18,20 @@ public class Client{
             socket.connect(new InetSocketAddress("localhost", 8080));
             objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectInputStream = new ObjectInputStream(socket.getInputStream());
+            System.out.println("Available commands:\n@user - send message to user\n/list - show online users\n/exit - left chat\n");
             login = validateLogin(consoleReader);
             Thread controller = new Thread(new Controller(this));
             controller.start();
             while (!socket.isClosed()) {
                 Message lastMessage = (Message) objectInputStream.readObject();
                 MessageType type = lastMessage.type();
-                View.update(lastMessage);
+                View.update(lastMessage, login);
                 if (type == MessageType.EXIT) break;
             }
             isActive = false;
             controller.join();
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Server is not available because of exception: " + e);
+            LOG.error("Server is not available because of exception: " + e);
         }
     }
 
@@ -36,8 +40,8 @@ public class Client{
             objectOutputStream.writeObject(message);
             objectOutputStream.flush();
         }
-        catch (IOException e){
-            System.out.println("Socket closed");
+        catch (IOException e) {
+            LOG.error("Socket closed");
         }
     }
     public boolean isActive(){
@@ -54,12 +58,12 @@ public class Client{
         while (true) {
             line = consoleReader.readLine();
             if (!isValidLogin(line)) {
-                System.out.print("Incorrect login, try again: ");
+                System.out.print(getReasonIncorrectName(line));
                 continue;
             }
             sendMessage(new Message(line, MessageType.REGISTRATION));
             Message lastMessage = (Message) objectInputStream.readObject();
-            View.update(lastMessage);
+            View.update(lastMessage, login);
             if (lastMessage.type() == MessageType.REGISTRATION){
                 break;
             }
@@ -68,7 +72,13 @@ public class Client{
     }
 
     private boolean isValidLogin(String login){
-        return !(login == null ||login.equals("/exit") || login.equals("/list") || containsWhitespace(login) || login.charAt(0) == '@');
+        return !(login == null || login.equals("/exit") || login.equals("/list") || containsWhitespace(login) || login.charAt(0) == '@');
+    }
+
+    private String getReasonIncorrectName(String name) {
+        if (containsWhitespace(name)) return "Login must not contain white spaces, try again: ";
+        if (name.equals("/exit") || name.equals("/list") || name.charAt(0) == '@') return "Login must not be a command, try again: ";
+        return "Login not set ";
     }
 
     private boolean containsWhitespace(String string){
