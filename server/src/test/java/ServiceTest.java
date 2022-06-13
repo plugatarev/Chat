@@ -13,6 +13,10 @@ public class ServiceTest {
         public void write(Message message) {
             messages.add(message);
         }
+
+        public List<String> getListStringMessages(){
+            return messages.stream().map(Message::message).toList();
+        }
     }
 
     @Test
@@ -23,7 +27,7 @@ public class ServiceTest {
     }
 
     @Test
-    public void multipleRegistrations(){
+    public void severalRegistrations(){
         ClientService service = new ClientService();
         service.register("abracadabra", new TestWriter());
         service.register("dgre", new TestWriter());
@@ -56,6 +60,26 @@ public class ServiceTest {
         Assert.assertEquals(hello.messages.get(0).senderName(), message.senderName());
         Assert.assertEquals(world.messages.get(0).message(), message.message());
         Assert.assertEquals(world.messages.get(0).senderName(), message.senderName());
+    }
+
+    @Test
+    public void severalMessageSendsToAllUsers(){
+        ClientService service = new ClientService();
+        TestWriter abracadabra = new TestWriter();
+        TestWriter hello = new TestWriter();
+        TestWriter world = new TestWriter();
+        service.register("abracadabra", abracadabra);
+        service.register("hello", hello);
+        service.register("world", world);
+        BroadMessage message1 = new BroadMessage("hello", MessageType.SEND_EVERYBODY, "abracadabra");
+        BroadMessage message2 = new BroadMessage("world", MessageType.SEND_EVERYBODY, "hello");
+        BroadMessage message3 = new BroadMessage("!!!", MessageType.SEND_EVERYBODY, "!!!");
+        service.sendAll(message1);
+        service.sendAll(message2);
+        service.sendAll(message3);
+        Assert.assertEquals(abracadabra.getListStringMessages(), List.of("hello", "world", "!!!"));
+        Assert.assertEquals(hello.getListStringMessages(), List.of("hello", "world", "!!!"));
+        Assert.assertEquals(world.getListStringMessages(), List.of("hello", "world", "!!!"));
     }
 
     @Test
@@ -108,5 +132,4 @@ public class ServiceTest {
         }
         Assert.assertTrue(isException);
     }
-
 }
