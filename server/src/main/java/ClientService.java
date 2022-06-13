@@ -37,7 +37,7 @@ public class ClientService{
     }
 
     public synchronized void delete(String clientName) {
-        //TODO: if doesn't exists
+        if (!clients.containsKey(clientName)) throw new IllegalStateException(clientName + " doesn't exists in clients list");
         clients.remove(clientName);
     }
 }
