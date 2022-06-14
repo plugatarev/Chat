@@ -18,7 +18,7 @@ public class Client{
             socket.connect(new InetSocketAddress("localhost", 8080));
             objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectInputStream = new ObjectInputStream(socket.getInputStream());
-            System.out.println("Available commands:\n@user - send message to user\n/list - show online users\n/exit - left chat\n");
+            System.out.println("Available commands:\n@[user] - send message to client named user\n/list - show online users\n/exit - leave the chat\n");
             login = validateLogin(consoleReader);
             Thread controller = new Thread(new Controller(this));
             controller.start();
@@ -31,7 +31,7 @@ public class Client{
             isActive = false;
             controller.join();
         } catch (Exception e) {
-            LOG.error("Server is not available because of exception: " + e);
+            logError("Server is not available because of exception: " + e.getMessage());
         }
     }
 
@@ -41,7 +41,7 @@ public class Client{
             objectOutputStream.flush();
         }
         catch (IOException e) {
-            LOG.error("Socket closed");
+            logError("Socket closed");
         }
     }
     public boolean isActive(){
@@ -50,6 +50,10 @@ public class Client{
 
     public String login(){
         return login;
+    }
+
+    public void logError(String line){
+        LOG.error(line);
     }
 
     private String validateLogin(BufferedReader consoleReader) throws IOException, ClassNotFoundException {

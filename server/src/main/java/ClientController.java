@@ -63,20 +63,20 @@ public class ClientController implements Runnable, Writer {
             }
             case SEND_EVERYBODY -> clientService.sendAll(new BroadMessage(message.message(), type, login));
             case SEND_USER -> {
-                clientService.sendTo(new UserMessage(message.message(), type, login, login));
-                clientService.sendTo(new UserMessage(message.message(), type, login, message.receiverName()));
+                clientService.sendTo(new ClientMessage(message.message(), type, login, login));
+                clientService.sendTo(new ClientMessage(message.message(), type, login, message.receiverName()));
             }
             case SHOW_USERS -> {
                 String names = clientService.getClientNames().toString();
-                clientService.sendTo(new UserMessage(names, type, null, login));
+                clientService.sendTo(new ClientMessage(names, type, null, login));
             }
             case EXIT -> {
-                clientService.sendTo(new UserMessage("You left chat", type, login, login));
+                clientService.sendTo(new ClientMessage("You left chat", type, login, login));
                 clientService.sendAll(new BroadMessage(login + " left chat", MessageType.SEND_EVERYBODY, login));
                 clientService.delete(login);
             }
             default -> {
-                clientService.sendTo(new UserMessage("You send message with invalid message type", MessageType.EXIT, login, login));
+                clientService.sendTo(new ClientMessage("You send message with invalid message type", MessageType.EXIT, login, login));
                 throw new IllegalStateException("The server received a message with invalid message type");
             }
         }
@@ -101,7 +101,7 @@ public class ClientController implements Runnable, Writer {
             try {
                 clientSocket.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.error("Failed to close client socket because of exception: " + e.getMessage());
             }
         }
     }
@@ -113,7 +113,7 @@ public class ClientController implements Runnable, Writer {
             writer.flush();
         }
         catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("Failed to send message to client because of exception: " + e.getMessage());
         }
     }
 }

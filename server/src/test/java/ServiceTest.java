@@ -36,7 +36,7 @@ public class ServiceTest {
     }
 
     @Test
-    public void registrationAlreadyExistsUser(){
+    public void registrationAlreadyExistsClient(){
         ClientService service = new ClientService();
         service.register("abracadabra", new TestWriter());
         Assert.assertFalse(service.register("abracadabra", new TestWriter()));
@@ -44,7 +44,7 @@ public class ServiceTest {
     }
 
     @Test
-    public void sendMessageToAllUsers(){
+    public void sendMessageToAllClients(){
         ClientService service = new ClientService();
         TestWriter abracadabra = new TestWriter();
         TestWriter hello = new TestWriter();
@@ -63,7 +63,7 @@ public class ServiceTest {
     }
 
     @Test
-    public void severalMessageSendsToAllUsers(){
+    public void severalMessageSendsToAllClients(){
         ClientService service = new ClientService();
         TestWriter abracadabra = new TestWriter();
         TestWriter hello = new TestWriter();
@@ -83,7 +83,7 @@ public class ServiceTest {
     }
 
     @Test
-    public void sendMessageToUser(){
+    public void sendMessageToClient(){
         ClientService service = new ClientService();
         TestWriter abracadabra = new TestWriter();
         TestWriter hello = new TestWriter();
@@ -91,27 +91,27 @@ public class ServiceTest {
         service.register("abracadabra", abracadabra);
         service.register("hello", hello);
         service.register("world", world);
-        UserMessage message = new UserMessage("hello", MessageType.SEND_USER, "abracadabra", "hello");
+        ClientMessage message = new ClientMessage("hello", MessageType.SEND_USER, "abracadabra", "hello");
         service.sendTo(message);
         Assert.assertEquals(hello.messages.get(0).message(), message.message());
         Assert.assertTrue(world.messages.isEmpty());
     }
 
     @Test
-    public void sendToDoesntExistsUser(){
+    public void sendToDoesntExistsClient(){
         ClientService service = new ClientService();
         TestWriter abracadabra = new TestWriter();
         TestWriter hello = new TestWriter();
         service.register("abracadabra", abracadabra);
         service.register("hello", hello);
-        UserMessage message = new UserMessage("hello", MessageType.SEND_USER, "abracadabra", "hello1");
+        ClientMessage message = new ClientMessage("hello", MessageType.SEND_USER, "abracadabra", "hello1");
         service.sendTo(message);
-        Assert.assertEquals(abracadabra.messages.get(0).message(), "Such user doesn't exists");
+        Assert.assertEquals(abracadabra.messages.get(0).message(), "Such client doesn't exists");
         Assert.assertTrue(hello.messages.isEmpty());
     }
 
     @Test
-    public void deleteOnlineUser(){
+    public void deleteOnlineClient(){
         ClientService service = new ClientService();
         TestWriter abracadabra = new TestWriter();
         service.register("abracadabra", abracadabra);
@@ -120,7 +120,7 @@ public class ServiceTest {
     }
 
     @Test
-    public void deleteDoesntOnlineUser(){
+    public void deleteDoesntOnlineClient(){
         ClientService service = new ClientService();
         TestWriter abracadabra = new TestWriter();
         service.register("abracadabra", abracadabra);

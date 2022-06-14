@@ -13,12 +13,12 @@ public class ClientService{
         }
     }
 
-    public synchronized void sendTo(UserMessage message) {
+    public synchronized void sendTo(ClientMessage message) {
         String receiver = message.receiverName();
         Writer writer;
         if (!clients.containsKey(receiver)){
             writer = clients.get(message.senderName());
-            message = new UserMessage("Such user doesn't exists", MessageType.SEND_USER, null, message.senderName());
+            message = new ClientMessage("Such client doesn't exists", MessageType.SEND_USER, null, message.senderName());
         }
         else{
             writer = clients.get(receiver);

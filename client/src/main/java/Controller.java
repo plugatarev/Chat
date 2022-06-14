@@ -14,7 +14,7 @@ public record Controller(Client client) implements Runnable {
                 client.sendMessage(message);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            client.logError("Failed to read data from user because of exception: " + e.getMessage());
         }
     }
 
