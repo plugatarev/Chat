@@ -3,7 +3,7 @@ public record View() {
         switch (m.type()) {
             case REGISTRATION -> System.out.print("New user: ");
             case SHOW_USERS -> System.out.println("Users online:");
-            case SEND_USER, SEND_EVERYBODY -> {
+            case SEND_USER -> {
                 if (userLogin.equals(m.senderName())) System.out.print("> ");
                 else if (m.senderName() != null) System.out.print(m.senderName() + ": ");
             }

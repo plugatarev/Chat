@@ -22,8 +22,8 @@ public class Main {
                 t.start();
             }
         }
-        catch (IOException exception){
-            LOG.error("The server stopped working because of exception: ", exception);
+        catch (IOException e){
+            LOG.error("The server stopped working because of exception: ", e);
         }
     }
 }

@@ -15,12 +15,14 @@ public class ClientService{
 
     public synchronized void sendTo(UserMessage message) {
         String receiver = message.receiverName();
-        Writer writer;
-        if (!clients.containsKey(receiver)){
+        Writer writer = clients.get(receiver);
+        if (writer == null) {
             writer = clients.get(message.senderName());
+            // CR: illegal state if writer == null
             message = new UserMessage("Such user doesn't exists", MessageType.SEND_USER, null, message.senderName());
         }
         else{
+            // CR: merge with containsKey
             writer = clients.get(receiver);
         }
         writer.write(message);
@@ -28,16 +30,17 @@ public class ClientService{
 
     public synchronized boolean register(String clientName, Writer outputStream) {
         if (clients.containsKey(clientName)) return false;
+        // CR: putIfAbsent
         clients.put(clientName, outputStream);
         return true;
     }
 
-    public synchronized List<String> getClientNames(){
-        return clients.keySet().stream().toList();
+    public synchronized Collection<String> getClientNames(){
+        return clients.keySet();
     }
 
     public synchronized void delete(String clientName) {
-        if (!clients.containsKey(clientName)) throw new IllegalStateException(clientName + " doesn't exists in clients list");
-        clients.remove(clientName);
+        Writer removed = clients.remove(clientName);
+        if (removed == null) throw new IllegalStateException(clientName + " doesn't exists in clients list");
     }
 }

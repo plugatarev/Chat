@@ -1,8 +1,14 @@
-public class BroadMessage extends Message{
-    public BroadMessage(String message, MessageType type, String senderName) {
-        super(message, type, senderName);
-        if (type != MessageType.SEND_EVERYBODY && type != MessageType.REGISTRATION){
-            throw new IllegalStateException("Invalid message type to send to all clients");
-        }
+public class BroadMessage extends Message {
+
+    enum BroadMessageType {
+        SEND_EVERYBODY,
+        REGISTRATION
+    }
+
+    private final BroadMessageType messageType;
+
+    public BroadMessage(String message, BroadMessageType messageType, String senderName) {
+        super(message, senderName);
+        this.messageType = messageType;
     }
 }

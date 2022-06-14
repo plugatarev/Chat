@@ -5,22 +5,26 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class Client{
+public class Client {
     private ObjectOutputStream objectOutputStream;
     private ObjectInputStream objectInputStream;
-    private String login;
     private boolean isActive = true;
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-
     public void start() {
         try (Socket socket = new Socket();
+             // CR: do not close system.in
              BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in))) {
             socket.connect(new InetSocketAddress("localhost", 8080));
             objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectInputStream = new ObjectInputStream(socket.getInputStream());
-            System.out.println("Available commands:\n@user - send message to user\n/list - show online users\n/exit - left chat\n");
-            login = validateLogin(consoleReader);
-            Thread controller = new Thread(new Controller(this));
+            System.out.println("""
+                    Available commands:
+                    @user - send message to user
+                    /list - show online users
+                    /exit - left chat
+                    """);
+            String login = validateLogin(consoleReader);
+            Thread controller = new Thread(new Controller(login, this));
             controller.start();
             while (!socket.isClosed()) {
                 Message lastMessage = (Message) objectInputStream.readObject();
@@ -30,45 +34,45 @@ public class Client{
             }
             isActive = false;
             controller.join();
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException | ClassNotFoundException e) {
             LOG.error("Server is not available because of exception: " + e);
         }
     }
 
+    // CR: Sender interface
     public void sendMessage(Message message){
         try {
             objectOutputStream.writeObject(message);
             objectOutputStream.flush();
         }
         catch (IOException e) {
-            LOG.error("Socket closed");
+            LOG.error("Failed to send a message: ", e);
+            throw new UncheckedIOException(e);
         }
     }
     public boolean isActive(){
         return isActive;
     }
 
-    public String login(){
-        return login;
-    }
-
     private String validateLogin(BufferedReader consoleReader) throws IOException, ClassNotFoundException {
-        String line;
+        String login;
         System.out.print("Enter the desired login: ");
         while (true) {
-            line = consoleReader.readLine();
-            if (!isValidLogin(line)) {
-                System.out.print(getReasonIncorrectName(line));
+            login = consoleReader.readLine();
+            if (!isValidLogin(login)) {
+                // CR: merge with isValidLogin
+                String reasonIncorrectName = getReasonIncorrectName(login);
+                System.err.print(reasonIncorrectName);
                 continue;
             }
-            sendMessage(new Message(line, MessageType.REGISTRATION));
+            sendMessage(new Message(login, MessageType.REGISTRATION));
             Message lastMessage = (Message) objectInputStream.readObject();
-            View.update(lastMessage, login);
+            View.update(lastMessage, null);
             if (lastMessage.type() == MessageType.REGISTRATION){
                 break;
             }
         }
-        return line;
+        return login;
     }
 
     private boolean isValidLogin(String login){

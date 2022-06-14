@@ -21,10 +21,17 @@ public class ClientController implements Runnable, Writer {
 
     @Override
     public void run() {
-        try (ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream())){
+        try {
+            ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream());
             writer = new ObjectOutputStream(clientSocket.getOutputStream());
             while (true) {
-                Message lastMessage = (Message) reader.readObject();
+                Object o = reader.readObject();
+                BroadMessage broadMessage = tryCast(o, BroadMessage.class);
+                if (broadMessage == null) {
+                    UserMessage userMessage = tryCast();
+
+                }
+                Message lastMessage = (Message) o;
                 if (login == null){
                     if (lastMessage.type() != MessageType.REGISTRATION) {
                         write(new Message("The server was waiting for the client to register but received a different message", MessageType.NOT_REGISTRATION));
@@ -43,8 +50,13 @@ public class ClientController implements Runnable, Writer {
             LOG.error("ClientService.Client " + login + " not available because of exception:", e);
         }
         finally {
-            close();
+            closeSocket();
         }
+    }
+
+    private static<T> T tryCast(Object obj, Class<T> clazz) {
+        // TODO: reflection
+        return null;
     }
 
     public void receive(Message message) {
@@ -96,13 +108,11 @@ public class ClientController implements Runnable, Writer {
         return string.indexOf(' ') != -1;
     }
 
-    private void close() {
-        if (clientSocket != null) {
-            try {
-                clientSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+    private void closeSocket() {
+        try {
+            clientSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

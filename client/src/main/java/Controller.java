@@ -1,15 +1,17 @@
 import java.io.*;
 
-public record Controller(Client client) implements Runnable {
+public record Controller(String login, Client client) implements Runnable {
 
     @Override
     public void run() {
         try (BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in))) {
             String line;
             while (client.isActive()){
-                if ((consoleReader.ready())) line = consoleReader.readLine();
-                else continue;
-                Message message = createMessage(line, client.login());
+                if ((!consoleReader.ready())) {
+                    continue;
+                }
+                line = consoleReader.readLine();
+                Message message = createMessage(line, login);
                 if (message == null) continue;
                 client.sendMessage(message);
             }
@@ -19,7 +21,7 @@ public record Controller(Client client) implements Runnable {
     }
 
     private Message createMessage(String message, String sender) {
-        if (message.length() == 0) return null;
+        if (message.isBlank()) return null;
         if (message.equals("/list")) return new Message(message, MessageType.SHOW_USERS, sender);
         if (message.equals("/exit")) return new Message(message, MessageType.EXIT, sender);
         if (message.charAt(0) != '@') {
