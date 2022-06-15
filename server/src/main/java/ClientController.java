@@ -75,7 +75,7 @@ public class ClientController implements Runnable, Writer {
                 ClientMessage clientMessage = MessageCaster.tryCast(message, ClientMessage.class);
                 ClientMessage.ClientMessageType type1 = ClientMessage.ClientMessageType.SEND_USER;
                 clientService.sendTo(new ClientMessage(message.message(), type1, login, login));
-                clientService.sendTo(new ClientMessage(message.message(), type1, login, clientMessage.receiverName()));
+                clientService.sendTo(clientMessage);
             }
             case SHOW_USERS -> {
                 String names = clientService.getClientNames().toString();
@@ -87,8 +87,8 @@ public class ClientController implements Runnable, Writer {
                 clientService.delete(login);
             }
             default -> {
-                String invalidMessage = "You send message with invalid message type";
-                clientService.sendTo(new ClientMessage(invalidMessage, ClientMessage.ClientMessageType.EXIT, login, login));
+                String errorMessage = "You send message with invalid message type";
+                clientService.sendTo(new ClientMessage(errorMessage, ClientMessage.ClientMessageType.EXIT, login, login));
                 throw new IllegalStateException("The server received a message with invalid message type");
             }
         }
