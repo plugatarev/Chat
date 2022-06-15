@@ -58,7 +58,7 @@ public class ClientController implements Runnable, Writer {
                 String reason = getReasonIncorrectName(clientName);
                 boolean isRegister = reason == null && clientService.register(message.message(), this);
                 if (!isRegister) {
-                    if (reason == null) reason = "A client with the same name already exists, try again: ";
+                    if (reason == null) reason = "Client with the same name already exists, try again: ";
                     write(new ClientMessage(reason, ClientMessage.ClientMessageType.NOT_REGISTRATION, null, null));
                 }
                 else {
