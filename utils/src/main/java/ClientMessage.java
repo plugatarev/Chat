@@ -1,8 +1,31 @@
 public class ClientMessage extends Message{
-    public ClientMessage(String message, MessageType type, String senderName, String receiverName) {
-        super(message, type, senderName, receiverName);
-        if (type == MessageType.SEND_EVERYBODY || type == MessageType.REGISTRATION){
-            throw new IllegalStateException("Invalid message type to send to client");
-        }
+
+    enum ClientMessageType {
+        SHOW_USERS,
+        SEND_USER,
+        EXIT,
+        REGISTRATION,
+        NOT_REGISTRATION
+    }
+
+    private final ClientMessageType type;
+    private final String receiverName;
+
+    public ClientMessage(String message, ClientMessageType type, String senderName, String receiverName) {
+        super(message, senderName);
+        this.receiverName = receiverName;
+        this.type = type;
+    }
+
+    public String receiverName(){
+        return receiverName;
+    }
+
+    public String senderName() {
+        return super.senderName();
+    }
+
+    public ClientMessageType type(){
+        return type;
     }
 }

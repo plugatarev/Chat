@@ -5,51 +5,56 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class Client{
+public class Client implements Sender{
     private ObjectOutputStream objectOutputStream;
     private ObjectInputStream objectInputStream;
-    private String login;
     private boolean isActive = true;
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
     public void start() {
-        try (Socket socket = new Socket();
-             BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in))) {
+        try (Socket socket = new Socket()) {
+            BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
             socket.connect(new InetSocketAddress("localhost", 8080));
             objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectInputStream = new ObjectInputStream(socket.getInputStream());
-            System.out.println("Available commands:\n@[user] - send message to client named user\n/list - show online users\n/exit - leave the chat\n");
-            login = validateLogin(consoleReader);
-            Thread controller = new Thread(new Controller(this));
+            System.out.println("""
+                    Available commands:
+                    @user - send message to user
+                    /list - show online users
+                    /exit - left chat
+                    """);
+            String login = validateLogin(consoleReader);
+            Thread controller = new Thread(new Controller(login, this));
             controller.start();
             while (!socket.isClosed()) {
+                //TODO: tryCast
                 Message lastMessage = (Message) objectInputStream.readObject();
-                MessageType type = lastMessage.type();
+//                MessageType type = lastMessage.type();
+                MessageType type = MessageCaster.getMessageType(lastMessage);
                 View.update(lastMessage, login);
                 if (type == MessageType.EXIT) break;
             }
             isActive = false;
             controller.join();
-        } catch (Exception e) {
-            logError("Server is not available because of exception: " + e.getMessage());
+        } catch (IOException | InterruptedException | ClassNotFoundException e) {
+            LOG.error("Server is not available because of exception: " + e);
         }
     }
 
+    @Override
     public void sendMessage(Message message){
         try {
             objectOutputStream.writeObject(message);
             objectOutputStream.flush();
         }
         catch (IOException e) {
-            logError("Socket closed");
+            LOG.error("Failed to send a message: ", e);
+            throw new UncheckedIOException(e);
         }
     }
+
     public boolean isActive(){
         return isActive;
-    }
-
-    public String login(){
-        return login;
     }
 
     public void logError(String line){
@@ -57,32 +62,33 @@ public class Client{
     }
 
     private String validateLogin(BufferedReader consoleReader) throws IOException, ClassNotFoundException {
-        String line;
+        String login;
         System.out.print("Enter the desired login: ");
         while (true) {
-            line = consoleReader.readLine();
-            if (!isValidLogin(line)) {
-                System.out.print(getReasonIncorrectName(line));
+            login = consoleReader.readLine();
+            String reasonIncorrectName = getReasonIncorrectName(login);
+            if (reasonIncorrectName != null) {
+                System.err.print(reasonIncorrectName);
                 continue;
             }
-            sendMessage(new Message(line, MessageType.REGISTRATION));
+            sendMessage(new BroadMessage(login, BroadMessage.BroadMessageType.REGISTRATION, null));
+//            sendMessage(new Message(login, MessageType.REGISTRATION));
+            //TODO: tryCast
             Message lastMessage = (Message) objectInputStream.readObject();
-            View.update(lastMessage, login);
-            if (lastMessage.type() == MessageType.REGISTRATION){
+            View.update(lastMessage, null);
+            MessageType type = MessageCaster.getMessageType(lastMessage);
+            if (type == MessageType.REGISTRATION){
                 break;
             }
         }
-        return line;
-    }
-
-    private boolean isValidLogin(String login){
-        return !(login == null || login.equals("/exit") || login.equals("/list") || containsWhitespace(login) || login.charAt(0) == '@');
+        return login;
     }
 
     private String getReasonIncorrectName(String name) {
+        if (name.charAt(0) == '@') return "login should not start with '@', try again: ";
         if (containsWhitespace(name)) return "Login must not contain white spaces, try again: ";
-        if (name.equals("/exit") || name.equals("/list") || name.charAt(0) == '@') return "Login must not be a command, try again: ";
-        return "Login not set ";
+        if (name.equals("/exit") || name.equals("/list")) return "Login must not be a command, try again: ";
+        return null;
     }
 
     private boolean containsWhitespace(String string){

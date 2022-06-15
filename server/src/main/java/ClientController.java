@@ -21,88 +21,102 @@ public class ClientController implements Runnable, Writer {
 
     @Override
     public void run() {
-        try (ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream())){
+        try {
+            ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream());
             writer = new ObjectOutputStream(clientSocket.getOutputStream());
             while (true) {
                 Message lastMessage = (Message) reader.readObject();
+                MessageType type = MessageCaster.getMessageType(lastMessage);
+//                BroadMessage broadMessage = MessageCaster.tryCast(o, BroadMessage.class);
+//                if (broadMessage == null) {
+//                    ClientMessage userMessage = MessageCaster.tryCast(o, ClientMessage.class);
+//
+//                }
                 if (login == null){
-                    if (lastMessage.type() != MessageType.REGISTRATION) {
-                        write(new Message("The server was waiting for the client to register but received a different message", MessageType.NOT_REGISTRATION));
+                    if (type != MessageType.REGISTRATION) {
+                        String errorMessage = "The server was waiting for the client to register but received a different message";
+                        write(new ClientMessage(errorMessage, ClientMessage.ClientMessageType.NOT_REGISTRATION, null, null));
+//                        write(new Message("The server was waiting for the client to register but received a different message", MessageType.NOT_REGISTRATION));
                         return;
                     }
                 }
                 else {
                     LOG.debug("User=" + login + " registration");
                 }
-                LOG.debug("Get message \""+ lastMessage.message() + "\"" + " Type=" + lastMessage.type() + " From=" + login);
+                LOG.debug("Get message \""+ lastMessage.message() + "\"" + " Type=" + type + " From=" + login);
                 receive(lastMessage);
-                if (lastMessage.type() == MessageType.EXIT) break;
+                if (type == MessageType.EXIT) break;
             }
         }
         catch (IOException | ClassNotFoundException e){
             LOG.error("ClientService.Client " + login + " not available because of exception:", e);
         }
         finally {
-            close();
+            closeSocket();
         }
     }
 
     public void receive(Message message) {
-        MessageType type = message.type();
+        MessageType type = MessageCaster.getMessageType(message);
         switch (type) {
             case REGISTRATION ->{
                 String clientName = message.message();
-                boolean isRegister = isValid(clientName) && clientService.register(message.message(), this);
+                String reason = getReasonIncorrectName(clientName);
+                boolean isRegister = reason == null && clientService.register(message.message(), this);
                 if (!isRegister) {
-                    write(new Message(getReasonIncorrectName(clientName), MessageType.NOT_REGISTRATION));
+                    if (reason == null) reason = "A client with the same name already exists, try again: ";
+                    write(new ClientMessage(reason, ClientMessage.ClientMessageType.NOT_REGISTRATION, null, null));
                 }
                 else {
                     login = message.message();
-                    clientService.sendAll(new BroadMessage(login + " successful registration", type, login));
+                    BroadMessage.BroadMessageType type1 = BroadMessage.BroadMessageType.REGISTRATION;
+                    clientService.sendAll(new BroadMessage(login + " successful registration", type1, login));
                 }
             }
-            case SEND_EVERYBODY -> clientService.sendAll(new BroadMessage(message.message(), type, login));
+            case SEND_EVERYBODY -> {
+                BroadMessage.BroadMessageType type1 = BroadMessage.BroadMessageType.SEND_EVERYBODY;
+                clientService.sendAll(new BroadMessage(message.message(), type1, login));
+            }
             case SEND_USER -> {
-                clientService.sendTo(new ClientMessage(message.message(), type, login, login));
-                clientService.sendTo(new ClientMessage(message.message(), type, login, message.receiverName()));
+                ClientMessage clientMessage = MessageCaster.tryCast(message, ClientMessage.class);
+                ClientMessage.ClientMessageType type1 = ClientMessage.ClientMessageType.SEND_USER;
+                clientService.sendTo(new ClientMessage(message.message(), type1, login, login));
+                clientService.sendTo(new ClientMessage(message.message(), type1, login, clientMessage.receiverName()));
             }
             case SHOW_USERS -> {
                 String names = clientService.getClientNames().toString();
-                clientService.sendTo(new ClientMessage(names, type, null, login));
+                clientService.sendTo(new ClientMessage(names, ClientMessage.ClientMessageType.SHOW_USERS, null, login));
             }
             case EXIT -> {
-                clientService.sendTo(new ClientMessage("You left chat", type, login, login));
-                clientService.sendAll(new BroadMessage(login + " left chat", MessageType.SEND_EVERYBODY, login));
+                clientService.sendTo(new ClientMessage("You left chat", ClientMessage.ClientMessageType.EXIT, login, login));
+                clientService.sendAll(new BroadMessage(login + " left chat", BroadMessage.BroadMessageType.SEND_EVERYBODY, login));
                 clientService.delete(login);
             }
             default -> {
-                clientService.sendTo(new ClientMessage("You send message with invalid message type", MessageType.EXIT, login, login));
+                String invalidMessage = "You send message with invalid message type";
+                clientService.sendTo(new ClientMessage(invalidMessage, ClientMessage.ClientMessageType.EXIT, login, login));
                 throw new IllegalStateException("The server received a message with invalid message type");
             }
         }
     }
 
     private String getReasonIncorrectName(String name) {
+        if (name.charAt(0) == '@') return "login should not start with '@'";
         if (containsWhitespace(name)) return "Login must not contain white spaces, try again: ";
-        if (name.equals("/exit") || name.equals("/list") || name.charAt(0) == '@') return "Login must not be a command, try again: ";
-        return "This login is busy, try again: ";
-    }
-
-    private boolean isValid(String name){
-        return !name.equals("/exit") && !name.equals("/list") && !containsWhitespace(name) && name.charAt(0) != '@';
+        if (name.equals("/exit") || name.equals("/list")) return "Login must not be a command, try again: ";
+        return null;
     }
 
     private boolean containsWhitespace(String string){
         return string.indexOf(' ') != -1;
     }
 
-    private void close() {
-        if (clientSocket != null) {
-            try {
-                clientSocket.close();
-            } catch (IOException e) {
-                LOG.error("Failed to close client socket because of exception: " + e.getMessage());
-            }
+
+    private void closeSocket() {
+        try {
+            clientSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

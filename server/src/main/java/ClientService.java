@@ -6,38 +6,41 @@ public class ClientService{
 
     public synchronized void sendAll(BroadMessage message) {
         for (Map.Entry<String, Writer> c : clients.entrySet()){
-            message.setReceiverName(c.getKey());
-            if (message.type() == MessageType.SEND_EVERYBODY) message.setMessageType(MessageType.SEND_USER);
+//            message.setReceiverName(c.getKey());
             Writer writer = c.getValue();
-            writer.write(new Message(message.message(), message.type(), message.senderName(), c.getKey()));
+            if (message.type() == BroadMessage.BroadMessageType.SEND_EVERYBODY) {
+                ClientMessage.ClientMessageType type = ClientMessage.ClientMessageType.SEND_USER;
+                writer.write(new ClientMessage(message.message(), type, message.senderName(), c.getKey()));
+            }
+            else{
+                ClientMessage.ClientMessageType type = ClientMessage.ClientMessageType.REGISTRATION;
+                writer.write(new ClientMessage(message.message(), type, message.senderName(), c.getKey()));
+            }
+//            writer.write(new Message(message.message(), message.type(), message.senderName(), c.getKey()));
         }
     }
 
     public synchronized void sendTo(ClientMessage message) {
         String receiver = message.receiverName();
-        Writer writer;
-        if (!clients.containsKey(receiver)){
+        Writer writer = clients.get(receiver);
+        if (writer == null) {
             writer = clients.get(message.senderName());
-            message = new ClientMessage("Such client doesn't exists", MessageType.SEND_USER, null, message.senderName());
-        }
-        else{
-            writer = clients.get(receiver);
+            if (writer == null) throw new IllegalStateException("Client " + message.senderName() + " not available to send a message");
+            message = new ClientMessage("Such client doesn't exists", ClientMessage.ClientMessageType.SEND_USER, null, message.senderName());
         }
         writer.write(message);
     }
 
     public synchronized boolean register(String clientName, Writer outputStream) {
-        if (clients.containsKey(clientName)) return false;
-        clients.put(clientName, outputStream);
-        return true;
+        return clients.putIfAbsent(clientName, outputStream) == null;
     }
 
-    public synchronized List<String> getClientNames(){
-        return clients.keySet().stream().toList();
+    public synchronized Collection<String> getClientNames(){
+        return clients.keySet();
     }
 
     public synchronized void delete(String clientName) {
-        if (!clients.containsKey(clientName)) throw new IllegalStateException(clientName + " doesn't exists in clients list");
-        clients.remove(clientName);
+        Writer removed = clients.remove(clientName);
+        if (removed == null) throw new IllegalStateException(clientName + " doesn't exists in clients list");
     }
 }
