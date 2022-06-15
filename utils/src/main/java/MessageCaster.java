@@ -1,8 +1,7 @@
 public class MessageCaster {
+
     public static<T> T tryCast(Object obj, Class<T> tClass){
-        // TODO: reflection
-        if (tClass.isInstance(obj)) return (T) obj;
-        return null;
+        return tClass.isInstance(obj) ? (T) obj : null;
     }
 
     public static MessageType getMessageType(Message message){
@@ -15,6 +14,7 @@ public class MessageCaster {
         }
         else{
             ClientMessage clientMessage = tryCast(message, ClientMessage.class);
+            if (clientMessage == null) throw new IllegalStateException("The message is not ClientMessage or BroadMessage");
             return switch (clientMessage.type()){
                 case SHOW_USERS -> MessageType.SHOW_USERS;
                 case SEND_USER -> MessageType.SEND_USER;

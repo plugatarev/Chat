@@ -6,7 +6,6 @@ public class ClientService{
 
     public synchronized void sendAll(BroadMessage message) {
         for (Map.Entry<String, Writer> c : clients.entrySet()){
-//            message.setReceiverName(c.getKey());
             Writer writer = c.getValue();
             if (message.type() == BroadMessage.BroadMessageType.SEND_EVERYBODY) {
                 ClientMessage.ClientMessageType type = ClientMessage.ClientMessageType.SEND_USER;
@@ -16,7 +15,6 @@ public class ClientService{
                 ClientMessage.ClientMessageType type = ClientMessage.ClientMessageType.REGISTRATION;
                 writer.write(new ClientMessage(message.message(), type, message.senderName(), c.getKey()));
             }
-//            writer.write(new Message(message.message(), message.type(), message.senderName(), c.getKey()));
         }
     }
 

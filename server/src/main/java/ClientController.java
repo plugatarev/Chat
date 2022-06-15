@@ -27,16 +27,10 @@ public class ClientController implements Runnable, Writer {
             while (true) {
                 Message lastMessage = (Message) reader.readObject();
                 MessageType type = MessageCaster.getMessageType(lastMessage);
-//                BroadMessage broadMessage = MessageCaster.tryCast(o, BroadMessage.class);
-//                if (broadMessage == null) {
-//                    ClientMessage userMessage = MessageCaster.tryCast(o, ClientMessage.class);
-//
-//                }
                 if (login == null){
                     if (type != MessageType.REGISTRATION) {
                         String errorMessage = "The server was waiting for the client to register but received a different message";
                         write(new ClientMessage(errorMessage, ClientMessage.ClientMessageType.NOT_REGISTRATION, null, null));
-//                        write(new Message("The server was waiting for the client to register but received a different message", MessageType.NOT_REGISTRATION));
                         return;
                     }
                 }
@@ -74,8 +68,8 @@ public class ClientController implements Runnable, Writer {
                 }
             }
             case SEND_EVERYBODY -> {
-                BroadMessage.BroadMessageType type1 = BroadMessage.BroadMessageType.SEND_EVERYBODY;
-                clientService.sendAll(new BroadMessage(message.message(), type1, login));
+                BroadMessage.BroadMessageType everybody = BroadMessage.BroadMessageType.SEND_EVERYBODY;
+                clientService.sendAll(new BroadMessage(message.message(), everybody, login));
             }
             case SEND_USER -> {
                 ClientMessage clientMessage = MessageCaster.tryCast(message, ClientMessage.class);

@@ -23,12 +23,9 @@ public record Controller(String login, Client client) implements Runnable {
 
     private Message createMessage(String message, String sender) {
         if (message.isBlank()) return null;
-//        if (message.equals("/list")) return new Message(message, MessageType.SHOW_USERS, sender);
-//        if (message.equals("/exit")) return new Message(message, MessageType.EXIT, sender);
         if (message.equals("/list")) return new ClientMessage(message, ClientMessage.ClientMessageType.SHOW_USERS, sender, sender);
         if (message.equals("/exit")) return new ClientMessage(message, ClientMessage.ClientMessageType.EXIT, sender, sender);
         if (message.charAt(0) != '@') {
-//            return new Message(message, MessageType.SEND_EVERYBODY, sender);
             return new BroadMessage(message, BroadMessage.BroadMessageType.SEND_EVERYBODY, sender);
         }
         int endIndex = message.indexOf(' ');
@@ -37,7 +34,6 @@ public record Controller(String login, Client client) implements Runnable {
         }
         String receiver = message.substring(1, endIndex);
         message = endIndex == message.length() ? "" : message.substring(++endIndex);
-//        return new Message(message, MessageType.SEND_USER, sender, receiver);
         return new ClientMessage(message, ClientMessage.ClientMessageType.SEND_USER, sender, receiver);
     }
 }

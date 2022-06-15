@@ -1,6 +1,5 @@
 public record View() {
-    public static void update(Message m, String clientLogin) {
-        MessageType type = MessageCaster.getMessageType(m);
+    public static void update(Message m, MessageType type, String clientLogin) {
         switch (type) {
             case REGISTRATION -> System.out.print("New user: ");
             case SHOW_USERS -> System.out.println("Users online:");

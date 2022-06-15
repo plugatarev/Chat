@@ -27,11 +27,9 @@ public class Client implements Sender{
             Thread controller = new Thread(new Controller(login, this));
             controller.start();
             while (!socket.isClosed()) {
-                //TODO: tryCast
                 Message lastMessage = (Message) objectInputStream.readObject();
-//                MessageType type = lastMessage.type();
                 MessageType type = MessageCaster.getMessageType(lastMessage);
-                View.update(lastMessage, login);
+                View.update(lastMessage, type, login);
                 if (type == MessageType.EXIT) break;
             }
             isActive = false;
@@ -72,11 +70,9 @@ public class Client implements Sender{
                 continue;
             }
             sendMessage(new BroadMessage(login, BroadMessage.BroadMessageType.REGISTRATION, null));
-//            sendMessage(new Message(login, MessageType.REGISTRATION));
-            //TODO: tryCast
             Message lastMessage = (Message) objectInputStream.readObject();
-            View.update(lastMessage, null);
             MessageType type = MessageCaster.getMessageType(lastMessage);
+            View.update(lastMessage, type, null);
             if (type == MessageType.REGISTRATION){
                 break;
             }
