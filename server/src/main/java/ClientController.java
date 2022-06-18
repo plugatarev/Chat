@@ -26,7 +26,7 @@ public class ClientController implements Runnable, Writer {
             writer = new ObjectOutputStream(clientSocket.getOutputStream());
             while (true) {
                 Message lastMessage = (Message) reader.readObject();
-                MessageType type = MessageCaster.getMessageType(lastMessage);
+                MessageType type = MessageUtils.getMessageType(lastMessage);
                 if (login == null){
                     if (type != MessageType.REGISTRATION) {
                         String errorMessage = "The server was waiting for the client to register but received a different message";
@@ -51,7 +51,8 @@ public class ClientController implements Runnable, Writer {
     }
 
     public void receive(Message message) {
-        MessageType type = MessageCaster.getMessageType(message);
+        // CR: i think it's better to handle message types separately, in some cases you won't need to create message again
+        MessageType type = MessageUtils.getMessageType(message);
         switch (type) {
             case REGISTRATION ->{
                 String clientName = message.message();
@@ -72,7 +73,7 @@ public class ClientController implements Runnable, Writer {
                 clientService.sendAll(new BroadMessage(message.message(), everybody, login));
             }
             case SEND_USER -> {
-                ClientMessage clientMessage = MessageCaster.tryCast(message, ClientMessage.class);
+                ClientMessage clientMessage = MessageUtils.tryCast(message, ClientMessage.class);
                 ClientMessage.ClientMessageType type1 = ClientMessage.ClientMessageType.SEND_USER;
                 clientService.sendTo(new ClientMessage(message.message(), type1, login, login));
                 clientService.sendTo(clientMessage);

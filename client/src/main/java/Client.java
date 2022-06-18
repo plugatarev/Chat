@@ -23,12 +23,12 @@ public class Client implements Sender{
                     /list - show online users
                     /exit - left chat
                     """);
-            String login = validateLogin(consoleReader);
+            String login = register(consoleReader);
             Thread controller = new Thread(new Controller(login, this));
             controller.start();
             while (!socket.isClosed()) {
                 Message lastMessage = (Message) objectInputStream.readObject();
-                MessageType type = MessageCaster.getMessageType(lastMessage);
+                MessageType type = MessageUtils.getMessageType(lastMessage);
                 View.update(lastMessage, type, login);
                 if (type == MessageType.EXIT) break;
             }
@@ -59,19 +59,20 @@ public class Client implements Sender{
         LOG.error(line);
     }
 
-    private String validateLogin(BufferedReader consoleReader) throws IOException, ClassNotFoundException {
+    private String register(BufferedReader consoleReader) throws IOException, ClassNotFoundException {
         String login;
         System.out.print("Enter the desired login: ");
         while (true) {
             login = consoleReader.readLine();
             String reasonIncorrectName = getReasonIncorrectName(login);
             if (reasonIncorrectName != null) {
-                System.err.print(reasonIncorrectName);
+                System.err.println(reasonIncorrectName);
                 continue;
             }
+            // CR: why is it broad message?
             sendMessage(new BroadMessage(login, BroadMessage.BroadMessageType.REGISTRATION, null));
             Message lastMessage = (Message) objectInputStream.readObject();
-            MessageType type = MessageCaster.getMessageType(lastMessage);
+            MessageType type = MessageUtils.getMessageType(lastMessage);
             View.update(lastMessage, type, null);
             if (type == MessageType.REGISTRATION){
                 break;
@@ -82,15 +83,8 @@ public class Client implements Sender{
 
     private String getReasonIncorrectName(String name) {
         if (name.charAt(0) == '@') return "login should not start with '@', try again: ";
-        if (containsWhitespace(name)) return "Login must not contain white spaces, try again: ";
+        if (name.contains(" ")) return "Login must not contain white spaces, try again: ";
         if (name.equals("/exit") || name.equals("/list")) return "Login must not be a command, try again: ";
         return null;
-    }
-
-    private boolean containsWhitespace(String string){
-        for (int i = 0; i < string.length(); i++){
-            if (string.charAt(i) == ' ') return true;
-        }
-        return false;
     }
 }

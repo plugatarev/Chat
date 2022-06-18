@@ -2,7 +2,7 @@ import java.util.*;
 
 public class ClientService{
 
-    private final HashMap<String, Writer> clients = new HashMap<>();
+    private final Map<String, Writer> clients = new HashMap<>();
 
     public synchronized void sendAll(BroadMessage message) {
         for (Map.Entry<String, Writer> c : clients.entrySet()){

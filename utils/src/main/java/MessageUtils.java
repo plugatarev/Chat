@@ -1,4 +1,4 @@
-public class MessageCaster {
+public class MessageUtils {
 
     public static<T> T tryCast(Object obj, Class<T> tClass){
         return tClass.isInstance(obj) ? (T) obj : null;

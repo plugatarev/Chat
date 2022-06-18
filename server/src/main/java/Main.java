@@ -7,7 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Main {
-    private static final Logger LOG = LoggerFactory.getLogger(ClientController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static final int PORT = 8080;
 
     public static void main(String[] args){
