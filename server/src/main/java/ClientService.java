@@ -4,29 +4,24 @@ public class ClientService{
 
     private final Map<String, Writer> clients = new HashMap<>();
 
-    public synchronized void sendAll(BroadMessage message) {
+    public synchronized void sendAll(ServerBroadMessage message) {
         for (Map.Entry<String, Writer> c : clients.entrySet()){
             Writer writer = c.getValue();
-            if (message.type() == BroadMessage.BroadMessageType.SEND_EVERYBODY) {
-                ClientMessage.ClientMessageType type = ClientMessage.ClientMessageType.SEND_USER;
-                writer.write(new ClientMessage(message.message(), type, message.senderName(), c.getKey()));
-            }
-            else{
-                ClientMessage.ClientMessageType type = ClientMessage.ClientMessageType.REGISTRATION;
-                writer.write(new ClientMessage(message.message(), type, message.senderName(), c.getKey()));
-            }
+            writer.write(message.serverMessage());
         }
     }
 
-    public synchronized void sendTo(ClientMessage message) {
-        String receiver = message.receiverName();
+    public synchronized void sendTo(ServerClientMessage message) {
+        ServerMessage clientMessage = message.serverMessage();
+        String receiver = message.receiver();
         Writer writer = clients.get(receiver);
         if (writer == null) {
-            writer = clients.get(message.senderName());
-            if (writer == null) throw new IllegalStateException("Client " + message.senderName() + " not available to send a message");
-            message = new ClientMessage("Such client doesn't exists", ClientMessage.ClientMessageType.SEND_USER, null, message.senderName());
+            writer = clients.get(message.sender());
+            if (writer == null) throw new IllegalStateException("Client " + message.sender() + " not available to send a message");
+            ServerMessage.ServerMessageType sendClient = ServerMessage.ServerMessageType.MESSAGE;
+            clientMessage = new ServerMessage("Such client doesn't exists", sendClient, null, message.sender());
         }
-        writer.write(message);
+        writer.write(clientMessage);
     }
 
     public synchronized boolean register(String clientName, Writer outputStream) {

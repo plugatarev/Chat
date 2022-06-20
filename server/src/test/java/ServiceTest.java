@@ -6,19 +6,19 @@ import java.util.List;
 
 
 public class ServiceTest {
-    private static final BroadMessage.BroadMessageType SEND_EVERYBODY = BroadMessage.BroadMessageType.SEND_EVERYBODY;
-    private static final ClientMessage.ClientMessageType SEND_USER = ClientMessage.ClientMessageType.SEND_USER;
+    private static final ServerBroadMessage.ServerBroadMessageType SEND_EVERYBODY = ServerBroadMessage.ServerBroadMessageType.MESSAGE;
+    private static final ServerClientMessage.ServerClientMessageType SEND_USER = ServerClientMessage.ServerClientMessageType.MESSAGE;
 
     static class TestWriter implements Writer{
-        final List<Message> messages = new ArrayList<>();
+        final List<ServerMessage> messages = new ArrayList<>();
 
         @Override
-        public void write(Message message) {
+        public void write(ServerMessage message) {
             messages.add(message);
         }
 
         public List<String> getListStringMessages(){
-            return messages.stream().map(Message::message).toList();
+            return messages.stream().map(ServerMessage::message).toList();
         }
     }
 
@@ -55,14 +55,14 @@ public class ServiceTest {
         service.register("abracadabra", abracadabra);
         service.register("hello", hello);
         service.register("world", world);
-        BroadMessage message = new BroadMessage("hellll@lll#o", SEND_EVERYBODY, "abracadabra");
+        ServerBroadMessage message = new ServerBroadMessage("hellll@lll#o", SEND_EVERYBODY, "abracadabra");
         service.sendAll(message);
         Assert.assertEquals(abracadabra.messages.get(0).message(), message.message());
-        Assert.assertEquals(abracadabra.messages.get(0).senderName(), message.senderName());
+        Assert.assertEquals(abracadabra.messages.get(0).sender(), message.sender());
         Assert.assertEquals(hello.messages.get(0).message(), message.message());
-        Assert.assertEquals(hello.messages.get(0).senderName(), message.senderName());
+        Assert.assertEquals(hello.messages.get(0).sender(), message.sender());
         Assert.assertEquals(world.messages.get(0).message(), message.message());
-        Assert.assertEquals(world.messages.get(0).senderName(), message.senderName());
+        Assert.assertEquals(world.messages.get(0).sender(), message.sender());
     }
 
     @Test
@@ -74,9 +74,9 @@ public class ServiceTest {
         service.register("abracadabra", abracadabra);
         service.register("hello", hello);
         service.register("world", world);
-        BroadMessage message1 = new BroadMessage("hello", SEND_EVERYBODY, "abracadabra");
-        BroadMessage message2 = new BroadMessage("world", SEND_EVERYBODY, "hello");
-        BroadMessage message3 = new BroadMessage("!!!", SEND_EVERYBODY, "!!!");
+        ServerBroadMessage message1 = new ServerBroadMessage("hello", SEND_EVERYBODY, "abracadabra");
+        ServerBroadMessage message2 = new ServerBroadMessage("world", SEND_EVERYBODY, "hello");
+        ServerBroadMessage message3 = new ServerBroadMessage("!!!", SEND_EVERYBODY, "!!!");
         service.sendAll(message1);
         service.sendAll(message2);
         service.sendAll(message3);
@@ -94,7 +94,7 @@ public class ServiceTest {
         service.register("abracadabra", abracadabra);
         service.register("hello", hello);
         service.register("world", world);
-        ClientMessage message = new ClientMessage("hello", SEND_USER, "abracadabra", "hello");
+        ServerClientMessage message = new ServerClientMessage("hello", SEND_USER, "abracadabra", "hello");
         service.sendTo(message);
         Assert.assertEquals(hello.messages.get(0).message(), message.message());
         Assert.assertTrue(world.messages.isEmpty());
@@ -107,7 +107,7 @@ public class ServiceTest {
         TestWriter hello = new TestWriter();
         service.register("abracadabra", abracadabra);
         service.register("hello", hello);
-        ClientMessage message = new ClientMessage("hello", SEND_USER, "abracadabra", "hello1");
+        ServerClientMessage message = new ServerClientMessage("hello", SEND_USER, "abracadabra", "hello1");
         service.sendTo(message);
         Assert.assertEquals(abracadabra.messages.get(0).message(), "Such client doesn't exists");
         Assert.assertTrue(hello.messages.isEmpty());

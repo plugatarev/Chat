@@ -1,3 +1,3 @@
 interface Writer {
-    void write(Message message);
+    void write(ServerMessage message);
 }

@@ -25,12 +25,13 @@ public class ClientController implements Runnable, Writer {
             ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream());
             writer = new ObjectOutputStream(clientSocket.getOutputStream());
             while (true) {
-                Message lastMessage = (Message) reader.readObject();
-                MessageType type = MessageUtils.getMessageType(lastMessage);
+                ClientMessage lastMessage = (ClientMessage) reader.readObject();
+                ClientMessage.ClientMessageType type = lastMessage.type();
                 if (login == null){
-                    if (type != MessageType.REGISTRATION) {
+                    if (type != ClientMessage.ClientMessageType.REGISTRATION) {
                         String errorMessage = "The server was waiting for the client to register but received a different message";
-                        write(new ClientMessage(errorMessage, ClientMessage.ClientMessageType.NOT_REGISTRATION, null, null));
+                        ServerMessage.ServerMessageType failedRegistrationType = ServerMessage.ServerMessageType.FAILED_REGISTRATION;
+                        write(new ServerMessage(errorMessage, failedRegistrationType, null, null));
                         return;
                     }
                 }
@@ -39,7 +40,7 @@ public class ClientController implements Runnable, Writer {
                 }
                 LOG.debug("Get message \""+ lastMessage.message() + "\"" + " Type=" + type + " From=" + login);
                 receive(lastMessage);
-                if (type == MessageType.EXIT) break;
+                if (type == ClientMessage.ClientMessageType.EXIT) break;
             }
         }
         catch (IOException | ClassNotFoundException e){
@@ -50,46 +51,46 @@ public class ClientController implements Runnable, Writer {
         }
     }
 
-    public void receive(Message message) {
-        // CR: i think it's better to handle message types separately, in some cases you won't need to create message again
-        MessageType type = MessageUtils.getMessageType(message);
-        switch (type) {
+    public void receive(ClientMessage message) {
+        switch (message.type()) {
             case REGISTRATION ->{
                 String clientName = message.message();
                 String reason = getReasonIncorrectName(clientName);
                 boolean isRegister = reason == null && clientService.register(message.message(), this);
                 if (!isRegister) {
                     if (reason == null) reason = "Client with the same name already exists, try again: ";
-                    write(new ClientMessage(reason, ClientMessage.ClientMessageType.NOT_REGISTRATION, null, null));
+                    ServerMessage.ServerMessageType failedRegistrationType = ServerMessage.ServerMessageType.FAILED_REGISTRATION;
+                    write(new ServerMessage(reason, failedRegistrationType, null, null));
                 }
                 else {
                     login = message.message();
-                    BroadMessage.BroadMessageType type1 = BroadMessage.BroadMessageType.REGISTRATION;
-                    clientService.sendAll(new BroadMessage(login + " successful registration", type1, login));
+                    ServerBroadMessage.ServerBroadMessageType newClientType = ServerBroadMessage.ServerBroadMessageType.NEW_CLIENT;
+                    clientService.sendAll(new ServerBroadMessage(login + " successful registration", newClientType, null));
                 }
             }
             case SEND_EVERYBODY -> {
-                BroadMessage.BroadMessageType everybody = BroadMessage.BroadMessageType.SEND_EVERYBODY;
-                clientService.sendAll(new BroadMessage(message.message(), everybody, login));
+                ServerBroadMessage.ServerBroadMessageType everybodyType = ServerBroadMessage.ServerBroadMessageType.MESSAGE;
+                clientService.sendAll(new ServerBroadMessage(message.message(), everybodyType, login));
             }
             case SEND_USER -> {
-                ClientMessage clientMessage = MessageUtils.tryCast(message, ClientMessage.class);
-                ClientMessage.ClientMessageType type1 = ClientMessage.ClientMessageType.SEND_USER;
-                clientService.sendTo(new ClientMessage(message.message(), type1, login, login));
-                clientService.sendTo(clientMessage);
+                ServerClientMessage.ServerClientMessageType sendClientType = ServerClientMessage.ServerClientMessageType.MESSAGE;
+                clientService.sendTo(new ServerClientMessage(message.message(), sendClientType, login, login));
+                clientService.sendTo(new ServerClientMessage(message.message(), sendClientType, login, message.receiver()));
             }
-            case SHOW_USERS -> {
+            case SHOW_CLIENTS -> {
                 String names = clientService.getClientNames().toString();
-                clientService.sendTo(new ClientMessage(names, ClientMessage.ClientMessageType.SHOW_USERS, null, login));
+                ServerClientMessage.ServerClientMessageType showUserListType = ServerClientMessage.ServerClientMessageType.CLIENTS_LIST;
+                clientService.sendTo(new ServerClientMessage(names, showUserListType, null, login));
             }
             case EXIT -> {
-                clientService.sendTo(new ClientMessage("You left chat", ClientMessage.ClientMessageType.EXIT, login, login));
-                clientService.sendAll(new BroadMessage(login + " left chat", BroadMessage.BroadMessageType.SEND_EVERYBODY, login));
+                clientService.sendTo(new ServerClientMessage("You left chat", ServerClientMessage.ServerClientMessageType.EXIT, login, login));
+                clientService.sendAll(new ServerBroadMessage(login + " left chat", ServerBroadMessage.ServerBroadMessageType.MESSAGE, login));
                 clientService.delete(login);
             }
             default -> {
                 String errorMessage = "You send message with invalid message type";
-                clientService.sendTo(new ClientMessage(errorMessage, ClientMessage.ClientMessageType.EXIT, login, login));
+                ServerClientMessage.ServerClientMessageType exitType = ServerClientMessage.ServerClientMessageType.EXIT;
+                clientService.sendTo(new ServerClientMessage(errorMessage, exitType, login, login));
                 throw new IllegalStateException("The server received a message with invalid message type");
             }
         }
@@ -116,7 +117,7 @@ public class ClientController implements Runnable, Writer {
     }
 
     @Override
-    public void write(Message message) {
+    public void write(ServerMessage message) {
         try{
             writer.writeObject(message);
             writer.flush();

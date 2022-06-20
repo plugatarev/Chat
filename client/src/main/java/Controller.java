@@ -12,7 +12,7 @@ public record Controller(String login, Client client) implements Runnable {
                     continue;
                 }
                 line = consoleReader.readLine();
-                Message message = createMessage(line, login);
+                ClientMessage message = createMessage(line, login);
                 if (message == null) continue;
                 client.sendMessage(message);
             }
@@ -21,12 +21,12 @@ public record Controller(String login, Client client) implements Runnable {
         }
     }
 
-    private Message createMessage(String message, String sender) {
+    private ClientMessage createMessage(String message, String sender) {
         if (message.isBlank()) return null;
-        if (message.equals("/list")) return new ClientMessage(message, ClientMessage.ClientMessageType.SHOW_USERS, sender, sender);
+        if (message.equals("/list")) return new ClientMessage(message, ClientMessage.ClientMessageType.SHOW_CLIENTS, sender, sender);
         if (message.equals("/exit")) return new ClientMessage(message, ClientMessage.ClientMessageType.EXIT, sender, sender);
         if (message.charAt(0) != '@') {
-            return new BroadMessage(message, BroadMessage.BroadMessageType.SEND_EVERYBODY, sender);
+            return new ClientMessage(message, ClientMessage.ClientMessageType.SEND_EVERYBODY, sender, null);
         }
         int endIndex = message.indexOf(' ');
         if (endIndex == -1) {

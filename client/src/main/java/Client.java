@@ -27,10 +27,9 @@ public class Client implements Sender{
             Thread controller = new Thread(new Controller(login, this));
             controller.start();
             while (!socket.isClosed()) {
-                Message lastMessage = (Message) objectInputStream.readObject();
-                MessageType type = MessageUtils.getMessageType(lastMessage);
-                View.update(lastMessage, type, login);
-                if (type == MessageType.EXIT) break;
+                ServerMessage lastMessage = (ServerMessage) objectInputStream.readObject();
+                View.update(lastMessage, login);
+                if (lastMessage.type() == ServerMessage.ServerMessageType.EXIT) break;
             }
             isActive = false;
             controller.join();
@@ -40,7 +39,7 @@ public class Client implements Sender{
     }
 
     @Override
-    public void sendMessage(Message message){
+    public void sendMessage(ClientMessage message){
         try {
             objectOutputStream.writeObject(message);
             objectOutputStream.flush();
@@ -69,12 +68,10 @@ public class Client implements Sender{
                 System.err.println(reasonIncorrectName);
                 continue;
             }
-            // CR: why is it broad message?
-            sendMessage(new BroadMessage(login, BroadMessage.BroadMessageType.REGISTRATION, null));
-            Message lastMessage = (Message) objectInputStream.readObject();
-            MessageType type = MessageUtils.getMessageType(lastMessage);
-            View.update(lastMessage, type, null);
-            if (type == MessageType.REGISTRATION){
+            sendMessage(new ClientMessage(login, ClientMessage.ClientMessageType.REGISTRATION, null, null));
+            ServerMessage lastMessage = (ServerMessage) objectInputStream.readObject();
+            View.update(lastMessage, null);
+            if (lastMessage.type() == ServerMessage.ServerMessageType.NEW_CLIENT){
                 break;
             }
         }

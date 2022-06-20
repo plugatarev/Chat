@@ -1,31 +1,12 @@
-public class ClientMessage extends Message{
+import java.io.Serializable;
 
+public record ClientMessage(String message, ClientMessage.ClientMessageType type, String sender,
+                            String receiver) implements Serializable {
     enum ClientMessageType {
-        SHOW_USERS,
+        SEND_EVERYBODY,
         SEND_USER,
-        EXIT,
         REGISTRATION,
-        NOT_REGISTRATION
-    }
-
-    private final ClientMessageType type;
-    private final String receiverName;
-
-    public ClientMessage(String message, ClientMessageType type, String senderName, String receiverName) {
-        super(message, senderName);
-        this.receiverName = receiverName;
-        this.type = type;
-    }
-
-    public String receiverName(){
-        return receiverName;
-    }
-
-    public String senderName() {
-        return super.senderName();
-    }
-
-    public ClientMessageType type(){
-        return type;
+        SHOW_CLIENTS,
+        EXIT
     }
 }

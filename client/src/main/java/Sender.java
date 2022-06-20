@@ -1,3 +1,3 @@
 public interface Sender {
-    void sendMessage(Message message);
+    void sendMessage(ClientMessage message);
 }
