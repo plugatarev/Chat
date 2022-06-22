@@ -56,9 +56,11 @@ public class ClientController implements Runnable, Writer {
             case REGISTRATION ->{
                 String clientName = message.message();
                 String reason = getReasonIncorrectName(clientName);
-                boolean isRegister = reason == null && clientService.register(message.message(), this);
-                if (!isRegister) {
-                    if (reason == null) reason = "Client with the same name already exists, try again: ";
+                if (reason == null && clientService.register(message.message(), this)) {
+                    reason = "Client with the same name already exists, try again: ";
+                }
+
+                if (reason != null) {
                     ServerMessage.ServerMessageType failedRegistrationType = ServerMessage.ServerMessageType.FAILED_REGISTRATION;
                     write(new ServerMessage(reason, failedRegistrationType, null, null));
                 }
@@ -86,12 +88,6 @@ public class ClientController implements Runnable, Writer {
                 clientService.sendTo(new ServerClientMessage("You left chat", ServerClientMessage.ServerClientMessageType.EXIT, login, login));
                 clientService.sendAll(new ServerBroadMessage(login + " left chat", ServerBroadMessage.ServerBroadMessageType.MESSAGE, login));
                 clientService.delete(login);
-            }
-            default -> {
-                String errorMessage = "You send message with invalid message type";
-                ServerClientMessage.ServerClientMessageType exitType = ServerClientMessage.ServerClientMessageType.EXIT;
-                clientService.sendTo(new ServerClientMessage(errorMessage, exitType, login, login));
-                throw new IllegalStateException("The server received a message with invalid message type");
             }
         }
     }

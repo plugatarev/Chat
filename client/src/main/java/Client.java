@@ -28,7 +28,7 @@ public class Client implements Sender{
             controller.start();
             while (!socket.isClosed()) {
                 ServerMessage lastMessage = (ServerMessage) objectInputStream.readObject();
-                View.update(lastMessage, login);
+                ConsoleUtils.showMessage(lastMessage, login);
                 if (lastMessage.type() == ServerMessage.ServerMessageType.EXIT) break;
             }
             isActive = false;
@@ -54,10 +54,6 @@ public class Client implements Sender{
         return isActive;
     }
 
-    public void logError(String line){
-        LOG.error(line);
-    }
-
     private String register(BufferedReader consoleReader) throws IOException, ClassNotFoundException {
         String login;
         System.out.print("Enter the desired login: ");
@@ -70,7 +66,7 @@ public class Client implements Sender{
             }
             sendMessage(new ClientMessage(login, ClientMessage.ClientMessageType.REGISTRATION, null, null));
             ServerMessage lastMessage = (ServerMessage) objectInputStream.readObject();
-            View.update(lastMessage, null);
+            ConsoleUtils.showMessage(lastMessage, null);
             if (lastMessage.type() == ServerMessage.ServerMessageType.NEW_CLIENT){
                 break;
             }

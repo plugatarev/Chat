@@ -1,5 +1,5 @@
-public record View() {
-    public static void update(ServerMessage m, String clientLogin) {
+public class ConsoleUtils {
+    public static void showMessage(ServerMessage m, String clientLogin) {
         switch (m.type()) {
             case NEW_CLIENT -> System.out.print("New user: ");
             case CLIENTS_LIST -> System.out.println("Users online:");

@@ -1,6 +1,11 @@
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 
 public record Controller(String login, Client client) implements Runnable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
 
     @Override
     public void run() {
@@ -17,7 +22,7 @@ public record Controller(String login, Client client) implements Runnable {
                 client.sendMessage(message);
             }
         } catch (IOException e) {
-            client.logError("Failed to read data from user because of exception: " + e.getMessage());
+            LOG.error("Failed to read data from user because of exception: " + e.getMessage());
         }
     }
 

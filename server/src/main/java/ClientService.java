@@ -24,8 +24,8 @@ public class ClientService{
         writer.write(clientMessage);
     }
 
-    public synchronized boolean register(String clientName, Writer outputStream) {
-        return clients.putIfAbsent(clientName, outputStream) == null;
+    public synchronized boolean register(String clientName, Writer writer) {
+        return clients.putIfAbsent(clientName, writer) == null;
     }
 
     public synchronized Collection<String> getClientNames(){
