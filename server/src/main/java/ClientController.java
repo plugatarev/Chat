@@ -56,7 +56,8 @@ public class ClientController implements Runnable, Writer {
             case REGISTRATION ->{
                 String clientName = message.message();
                 String reason = getReasonIncorrectName(clientName);
-                if (reason == null && clientService.register(message.message(), this)) {
+
+                if (!clientService.register(message.message(), this)) {
                     reason = "Client with the same name already exists, try again: ";
                 }
 
